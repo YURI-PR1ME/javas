@@ -8,6 +8,7 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
@@ -101,6 +102,12 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (command.getName().equalsIgnoreCase("spawntyrant")) {
+            // 检查是否是控制台或拥有特殊权限
+            if (!(sender instanceof ConsoleCommandSender) && !sender.hasPermission("tyrantboss.console")) {
+                sender.sendMessage("§c这个指令只能通过召唤物品使用!");
+                return true;
+            }
+
             if (!(sender instanceof Player)) {
                 sender.sendMessage("只有玩家可以使用此命令!");
                 return true;
@@ -108,11 +115,6 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
 
             Player player = (Player) sender;
             
-            if (!player.hasPermission("tyrantboss.spawn")) {
-                player.sendMessage("§c你没有权限生成暴君Boss!");
-                return true;
-            }
-
             Location spawnLocation = player.getLocation();
             spawnTyrantBoss(spawnLocation);
             player.sendMessage("§6暴君Boss 已生成! 准备战斗!");

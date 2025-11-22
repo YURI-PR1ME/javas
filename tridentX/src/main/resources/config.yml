@@ -1,0 +1,12 @@
+# 太平洋之风插件配置
+
+# 暴君召唤命令
+# 可用占位符:
+# %x% - X坐标
+# %y% - Y坐标  
+# %z% - Z坐标
+# %world% - 世界名称
+tyrant-summon-command: "spawntyrant %x% %y% %z%"
+
+# 调试模式
+debug: false

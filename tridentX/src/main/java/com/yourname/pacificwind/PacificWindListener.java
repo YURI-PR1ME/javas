@@ -157,7 +157,7 @@ public class PacificWindListener implements Listener {
                 return;
             }
             
-            // 方法2: 尝试直接执行命令
+            // 方法2: 尝试直接执行命令（使用控制台）
             if (tryCommandSpawn(player, location)) {
                 return;
             }
@@ -174,47 +174,44 @@ public class PacificWindListener implements Listener {
         }
     }
     
-    private boolean tryReflectiveSpawn(Location location) {
-        try {
-            // 获取暴君插件
-            org.bukkit.plugin.Plugin tyrantPlugin = Bukkit.getPluginManager().getPlugin("TyrantBoss");
-            if (tyrantPlugin == null) {
-                plugin.getLogger().warning("暴君插件未找到");
-                return false;
-            }
-            
-            // 使用反射调用 spawnTyrantBoss 方法
-            java.lang.reflect.Method spawnMethod = tyrantPlugin.getClass().getMethod("spawnTyrantBoss", Location.class);
-            spawnMethod.invoke(tyrantPlugin, location);
-            
-            plugin.getLogger().info("通过反射成功召唤暴君");
-            return true;
-            
-        } catch (Exception e) {
-            plugin.getLogger().warning("反射调用失败: " + e.getMessage());
+   private boolean tryReflectiveSpawn(Location location) {
+    try {
+        // 获取暴君插件 - 尝试多个可能的名称
+        org.bukkit.plugin.Plugin tyrantPlugin = Bukkit.getPluginManager().getPlugin("TyrantBoss");
+        
+        // 如果没找到，尝试其他可能的名称
+        if (tyrantPlugin == null) {
+            tyrantPlugin = Bukkit.getPluginManager().getPlugin("TyrantBossPlugin");
+        }
+        if (tyrantPlugin == null) {
+            tyrantPlugin = Bukkit.getPluginManager().getPlugin("tyrantboss");
+        }
+        
+        if (tyrantPlugin == null) {
+            plugin.getLogger().warning("暴君插件未找到，尝试的插件名: TyrantBoss, TyrantBossPlugin, tyrantboss");
             return false;
         }
+        
+        plugin.getLogger().info("找到暴君插件: " + tyrantPlugin.getName() + " v" + tyrantPlugin.getDescription().getVersion());
+        
+        // 使用反射调用 spawnTyrantBoss 方法
+        java.lang.reflect.Method spawnMethod = tyrantPlugin.getClass().getMethod("spawnTyrantBoss", Location.class);
+        spawnMethod.invoke(tyrantPlugin, location);
+        
+        plugin.getLogger().info("通过反射成功召唤暴君");
+        return true;
+        
+    } catch (Exception e) {
+        plugin.getLogger().warning("反射调用失败: " + e.getMessage());
+        e.printStackTrace();
+        return false;
     }
-    
+} 
     private boolean tryCommandSpawn(Player player, Location location) {
         try {
-            // 创建命令执行器
-            String command = "spawntyrant";
-            
-            // 临时传送玩家到目标位置执行命令
-            Location originalLocation = player.getLocation();
-            player.teleport(location);
-            
-            // 执行命令
-            boolean success = Bukkit.dispatchCommand(player, command);
-            
-            // 传送回原位置
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    player.teleport(originalLocation);
-                }
-            }.runTaskLater(plugin, 5L);
+            // 通过控制台执行命令，这样就不需要处理玩家权限
+            String command = "execute as " + player.getName() + " at " + player.getName() + " run spawntyrant";
+            boolean success = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
             
             if (success) {
                 player.sendMessage("§4⚡ 暴君已被召唤! 准备战斗!");
@@ -224,6 +221,7 @@ public class PacificWindListener implements Listener {
             
         } catch (Exception e) {
             plugin.getLogger().warning("命令召唤失败: " + e.getMessage());
+            e.printStackTrace();
         }
         return false;
     }

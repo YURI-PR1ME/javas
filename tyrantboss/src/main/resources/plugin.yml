@@ -6,7 +6,7 @@ commands:
   spawntyrant:
     description: 生成暴君Boss
     usage: /spawntyrant
-    permission: tyrantboss.spawn
+    permission: tyrantboss.console  # 改为控制台专用权限
   tyrantreload:
     description: 重新加载暴君插件配置
     usage: /tyrantreload
@@ -27,14 +27,14 @@ permissions:
   tyrantboss.*:
     description: 暴君Boss插件的所有权限
     children:
-      tyrantboss.spawn: true
+      tyrantboss.console: true
       tyrantboss.reload: true
       tyrantboss.addtreasure: true
       tyrantboss.listtreasure: true
       tyrantboss.removetreasure: true
-  tyrantboss.spawn:
-    description: 生成暴君Boss的权限
-    default: op
+  tyrantboss.console:
+    description: 控制台生成暴君Boss的权限
+    default: false  # 玩家默认没有权限
   tyrantboss.reload:
     description: 重新加载配置的权限
     default: op
