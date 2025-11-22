@@ -1,0 +1,7 @@
+name: CreditSurveillance
+version: 1.0.0
+main: com.yourname.creditsurveillance.CreditSurveillance
+api-version: 1.16
+depend: [CreditPlugin]
+description: Citizen Credit Surveillance System
+author: YourName

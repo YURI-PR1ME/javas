@@ -1,0 +1,6 @@
+name: EndSword
+version: 1.0
+main: com.yourdomain.endsword.EndSword
+api-version: '1.21'
+description: 终末之剑插件
+author: YourName

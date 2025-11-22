@@ -1,0 +1,25 @@
+name: ArenaPlugin
+version: 1.0.0
+main: com.yourname.arenaplugin.ArenaPlugin
+api-version: 1.16
+depend: [CreditPlugin]
+description: 地下擂台系统 - 信用点插件附属
+author: yourname
+
+commands:
+  arena:
+    description: 擂台系统主命令
+    usage: /arena <wand|create|start|stop|bet|status>
+    permission: arena.use
+    permission-message: 你没有权限使用此命令
+
+permissions:
+  arena.use:
+    description: 使用擂台系统基础命令
+    default: true
+  arena.admin:
+    description: 擂台系统管理权限
+    default: op
+  arena.bet:
+    description: 下注权限
+    default: true

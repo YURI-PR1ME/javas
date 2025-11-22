@@ -1,0 +1,22 @@
+name: EternalFire
+version: '1.0.0'
+main: com.yourname.eternalfire.EternalFire
+api-version: '1.21'
+description: 永恒之火插件 - 实现永不熄灭的火焰系统
+author: YourName
+website: https://yoursite.com
+
+commands:
+  getfirewand:
+    description: 获取火焰魔杖
+    usage: /<command>
+    permission: eternalfire.admin
+  getzerostone:
+    description: 获取零度石
+    usage: /<command>
+    permission: eternalfire.admin
+
+permissions:
+  eternalfire.admin:
+    description: 永恒之火管理员权限
+    default: op

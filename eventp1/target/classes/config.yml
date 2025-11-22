@@ -1,0 +1,14 @@
+# config.yml
+# 社会净化演习配置
+social-purification:
+  duration-days: 3
+  active: false
+  end-time: 0
+
+# 资源税配置
+resource-tax:
+  active: false
+  auto-start: false
+
+# 数据存储
+tax-surveillance-players: []

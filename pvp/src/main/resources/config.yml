@@ -1,0 +1,49 @@
+# 地下擂台系统配置
+
+# 擂台区域设置
+arena:
+  # 最小擂台尺寸 (必须大于6x6，因为边界提醒需要3格缓冲)
+  min-size: 10
+  # 选手选择等待时间 (秒)
+  selection-time: 10
+  # 比赛开始前准备时间 (秒)
+  preparation-time: 60
+  # 边界提醒距离
+  boundary-alert-distance: 3
+
+# 下注系统设置
+betting:
+  # A档赔率 (保守)
+  tier-a:
+    win-multiplier: 1.5
+    lose-refund: 0.5
+  # B档赔率 (激进)
+  tier-b:
+    win-multiplier: 2.0
+    lose-refund: 0.0
+  # 最小下注金额
+  min-bet: 1
+  # 最大下注金额
+  max-bet: 100
+
+# 消息配置
+messages:
+  prefix: "&6[擂台]&f "
+  boundary-warning: "&c⚠ 警告！你接近擂台边界！"
+  selection-started: "&a擂台选手选择开始！在擂台内停留10秒的前两名玩家将成为对手"
+  player-selected: "&a玩家 %s 已被选为选手"
+  match-starting: "&a比赛将在 %d 秒后开始！红队: %s vs 蓝队: %s"
+  bet-open: "&e下注已开放！使用 /arena bet <A|B> <红|蓝> <金额> 进行下注"
+  bet-placed: "&a下注成功！你下注 %s 点信用点到 %s 档，支持 %s 队"
+  match-result: "&6比赛结果：%s 获胜！"
+  bet-result: "&e下注结果：你获得了 %d 点信用点"
+
+# 效果配置
+effects:
+  # 边界提醒粒子效果
+  boundary-particle: REDSTONE
+  boundary-color: RED
+  # 选手选择特效
+  selection-particle: HEART
+  # 比赛开始特效
+  start-particle: FIREWORK

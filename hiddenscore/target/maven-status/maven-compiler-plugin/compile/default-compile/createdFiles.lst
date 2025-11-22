@@ -1,0 +1,4 @@
+com/yourname/hiddenscore/HiddenScorePlugin.class
+com/yourname/hiddenscore/ScoreManager.class
+com/yourname/hiddenscore/ScoreListener.class
+com/yourname/hiddenscore/ScoreCommand.class

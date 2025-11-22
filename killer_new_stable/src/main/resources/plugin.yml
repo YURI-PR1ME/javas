@@ -1,0 +1,24 @@
+name: AssassinPlugin
+version: 1.0.0
+main: com.yourname.assassinplugin.AssassinPlugin
+api-version: "1.21"
+description: Dark Web Assassin System - Credit Plugin Addon
+author: YourName
+website: yourwebsite.com
+
+depend: [CreditPlugin]
+
+commands:
+  assassin:
+    description: 暗网买凶系统
+    usage: /<command> <gui|give|contracts|cancel|cooldown|reload|register|offer|accept>
+    permission: assassin.use
+    permission-message: 你没有权限使用此命令
+
+permissions:
+  assassin.use:
+    description: 允许使用暗网买凶系统
+    default: true
+  assassin.admin:
+    description: 暗网管理员权限
+    default: op

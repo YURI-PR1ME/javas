@@ -1,0 +1,44 @@
+# 买凶插件配置文件
+
+# 买凶价格设置
+prices:
+  tier1: 30
+  tier2: 40
+  tier3: 80
+
+# 冷却时间设置（毫秒）- 可配置
+cooldown: 600000  # 10分钟
+
+# 杀手生成设置
+assassin:
+  min-distance: 40
+  max-distance: 60
+  spawn-delay: 100  # 生成延迟（tick）
+
+# 杀手属性设置
+tier1:
+  health: 30
+  damage: 6
+  speed: 0.25
+
+tier2:
+  health: 50
+  damage: 8
+  speed: 0.28
+
+tier3:
+  health: 60
+  speed: 0.23
+
+# 消息设置
+messages:
+  contract-created: "§8[暗网] §a✅ 合约已发布！目标: %target% | 等级: %tier%"
+  contract-completed: "§8[暗网] §a✅ 合约完成！目标 %target% 已被清除"
+  contract-failed: "§8[暗网] §c❌ 你的杀手被反杀了！合约失败"
+  target-warning: "§c⚔️ 你感受到了杀气！有人买凶要你的命！"
+  credits-stolen: "§8[暗网] §6💰 你获得了目标的所有信用点"
+  credits-lost: "§c💸 你的信用点被杀手抢走了！"
+  # 玩家刺客系统配置
+player-assassin:
+  entry-fee: 50
+  min-credits-multiplier: 2

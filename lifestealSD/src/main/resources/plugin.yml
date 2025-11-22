@@ -1,0 +1,24 @@
+name: LifeStealSword
+version: 1.0.0
+main: com.yourname.lifestealsword.LifeStealSwordPlugin
+api-version: "1.21"
+description: 生命窃取剑附属插件
+author: YourName
+website: https://example.com
+
+depend: [DrownedKing]
+
+commands:
+  lifestealsword:
+    description: 生命窃取剑管理命令
+    usage: /<command> give [player]
+    permission: lifestealsword.admin
+    aliases: [lss]
+
+permissions:
+  lifestealsword.use:
+    description: 使用生命窃取剑
+    default: true
+  lifestealsword.admin:
+    description: 生命窃取剑管理员权限
+    default: op

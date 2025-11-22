@@ -1,0 +1,104 @@
+# 商店插件配置
+shop:
+  # 商店终端设置
+  terminal:
+    material: "ENDER_CHEST"
+    name: "&6商店终端"
+    lore:
+      - "&7右键打开商店"
+      - "&e使用信用点购买物品"
+      - "&c合成获得"
+  
+  # 合成配方（显示用）
+  recipe:
+    shape:
+      - "DED"
+      - "EOE" 
+      - "DED"
+    ingredients:
+      D: "DIAMOND"
+      E: "EMERALD"
+      O: "OBSIDIAN"
+  
+  # GUI设置
+  gui:
+    title: "&8信用点商店"
+    rows: 6
+    categories:
+      - name: "&a低价区"
+        slot: 10
+        icon: "WOODEN_SWORD"
+        entrance_fee: 0
+        description: "&7新手区域，免费进入"
+      - name: "&6贫民区" 
+        slot: 12
+        icon: "STONE_SWORD"
+        entrance_fee: 5
+        description: "&7需要5点信用点入场"
+      - name: "&c高级区"
+        slot: 14
+        icon: "DIAMOND_SWORD"
+        entrance_fee: 100
+        description: "&7需要100点信用点入场"
+      - name: "&d食物"
+        slot: 16
+        icon: "GOLDEN_APPLE"
+        entrance_fee: 0
+        description: "&7免费食物区域"
+      - name: "&e特殊"
+        slot: 28
+        icon: "TOTEM_OF_UNDYING"
+        entrance_fee: 0
+        description: "&7特殊物品区域"
+      - name: "&6方块"
+        slot: 30
+        icon: "DIAMOND_BLOCK"
+        entrance_fee: 0
+        description: "&7建筑方块区域"
+      - name: "&9材料"
+        slot: 32
+        icon: "DIAMOND"
+        entrance_fee: 0
+        description: "&7基础材料区域"
+      - name: "&5附魔"
+        slot: 34
+        icon: "ENCHANTED_BOOK"
+        entrance_fee: 0
+        description: "&7附魔物品区域"
+  
+  # 入场费消息
+  entrance_messages:
+    insufficient_funds: "&c❌ 信用点不足！需要 {fee} 点信用点才能进入 {category}"
+    charged: "&a✅ 已扣除 {fee} 点信用点进入 {category}"
+    free: "&a✅ 免费进入 {category}"
+  
+  # 默认商品
+  default-items:
+    wooden_sword:
+      name: "&6木剑"
+      material: "WOODEN_SWORD"
+      price: 2
+      category: "低价区"
+      lore:
+        - "&7新手武器"
+        - ""
+        - "&6价格: &e2 信用点"
+    stone_sword:
+      name: "&7石剑"
+      material: "STONE_SWORD"
+      price: 8
+      category: "贫民区"
+      lore:
+        - "&7基础武器"
+        - ""
+        - "&6价格: &e8 信用点"
+    diamond_sword:
+      name: "&b钻石剑"
+      material: "DIAMOND_SWORD"
+      price: 50
+      category: "高级区"
+      lore:
+        - "&7锋利 V"
+        - "&7耐久 III"
+        - ""
+        - "&6价格: &e50 信用点"

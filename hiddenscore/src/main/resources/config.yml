@@ -1,0 +1,17 @@
+# 隐藏分系统配置
+
+# 分数设置
+scores:
+  boss_kill: 100
+  player_kill: 10
+  monster_kill: 5
+  exp_leader: 3
+  credit_leader: 2
+  netherite_first: 2
+  credit_lowest: 9
+  warpspeed_achievement: 10
+
+# 统计设置
+stats:
+  exp_interval_days: 1
+  credit_interval_days: 2

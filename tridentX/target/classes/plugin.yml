@@ -1,0 +1,29 @@
+# [file name]: plugin.yml
+name: PacificWind
+version: 1.0.0
+main: com.yourname.pacificwind.PacificWindPlugin
+api-version: 1.21
+description: 太平洋之风三叉戟 - 召唤暴君的仪式物品
+author: YourName
+website: https://yoursite.com
+
+commands:
+  pacificwind:
+    description: 太平洋之风管理命令
+    usage: /<command> <give|reset|status|help>
+    permission: pacificwind.use
+    aliases: [pw, wind]
+
+permissions:
+  pacificwind.use:
+    description: 使用太平洋之风基础命令
+    default: op
+  pacificwind.give:
+    description: 给予太平洋之风三叉戟
+    default: op
+  pacificwind.admin:
+    description: 太平洋之风管理员权限
+    default: op
+  tyrantboss.spawn:
+    description: 生成暴君Boss的权限
+    default: op

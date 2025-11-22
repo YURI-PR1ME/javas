@@ -1,0 +1,4 @@
+com/yourname/eventpart1/EventCommand.class
+com/yourname/eventpart1/EventPart1.class
+com/yourname/eventpart1/EventManager.class
+com/yourname/eventpart1/EventListener.class

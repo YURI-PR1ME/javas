@@ -1,0 +1,16 @@
+name: MechanicAssistant
+version: 1.0.0
+main: com.example.mechanicassistant.MechanicAssistant
+api-version: '1.21'
+description: A plugin for handling structures with glue and wrench
+author: YourName
+commands:
+  givewrench:
+    description: 给予结构扳手
+    usage: /givewrench
+  giveglue:
+    description: 给予强力胶
+    usage: /giveglue
+  givemachine:
+    description: 给予压缩机械
+    usage: /givemachine

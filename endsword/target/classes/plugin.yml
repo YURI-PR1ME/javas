@@ -1,0 +1,17 @@
+name: EndSwordPlugin
+version: 1.0.0
+main: com.example.endsword.EndSwordPlugin
+api-version: 1.21
+description: 添加强大的终末之剑
+author: YourName
+
+commands:
+  endsword:
+    description: 获取终末之剑
+    usage: /<command>
+    permission: endsword.give
+
+permissions:
+  endsword.give:
+    description: 允许获取终末之剑
+    default: op

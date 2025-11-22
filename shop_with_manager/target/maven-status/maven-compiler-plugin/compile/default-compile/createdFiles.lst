@@ -1,0 +1,11 @@
+com/yourname/shopplugin/ShopItem.class
+com/yourname/shopplugin/ShopPlugin.class
+com/yourname/shopplugin/ShopGUI.class
+com/yourname/shopplugin/ShopTerminal.class
+com/yourname/shopplugin/ShopManager$ShopCategory.class
+com/yourname/shopplugin/CreditHook.class
+com/yourname/shopplugin/ShopListener.class
+com/yourname/shopplugin/ConfigManager.class
+com/yourname/shopplugin/AdminGUI.class
+com/yourname/shopplugin/ShopCommand.class
+com/yourname/shopplugin/ShopManager.class

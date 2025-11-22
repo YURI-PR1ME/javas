@@ -1,0 +1,39 @@
+# 溺尸王宝藏袋配置
+# 奖励配置格式:
+# rewards:
+#   奖励ID:
+#     chance: 概率(0-100)
+#     serialized: 序列化的物品数据(优先使用)
+#     material: 物品类型(备用)
+#     amount: 数量
+#     name: 显示名称(支持颜色代码&)
+#     lore: 描述文字列表
+#     enchantments: 附魔列表
+#     nbt: 自定义NBT标签
+#     unbreakable: 是否不可破坏
+#     custom_model_data: 自定义模型数据
+
+rewards:
+  # 示例奖励
+  example_trident:
+    chance: 15.0
+    material: TRIDENT
+    amount: 1
+    name: "&b示例三叉戟"
+    lore:
+      - "&7这是一个示例奖励"
+      - "&7概率为15%"
+    enchantments:
+      loyalty: 3
+      impaling: 5
+    unbreakable: true
+
+  # 默认奖励 - 如果其他奖励都没中，会使用这个
+  default_reward:
+    chance: 100.0
+    material: PRISMARINE_CRYSTALS
+    amount: 8
+    name: "&b海洋精华"
+    lore:
+      - "&7溺尸王的能量结晶"
+      - "&7蕴含着深海的力量"

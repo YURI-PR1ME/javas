@@ -1,0 +1,23 @@
+name: AssassinPlugin
+version: 1.0.0
+main: com.yourname.assassinplugin.AssassinPlugin
+api-version: "1.21"
+description: Dark Web Assassin System - Credit Plugin Addon
+author: YourName
+website: yourwebsite.com
+
+depend: [CreditPlugin]
+
+commands:
+  assassin:
+    description: Assassin system commands
+    usage: /<command>
+    permission: assassin.use
+
+permissions:
+  assassin.use:
+    description: Use assassin system
+    default: op
+  assassin.admin:
+    description: Administer assassin system
+    default: op

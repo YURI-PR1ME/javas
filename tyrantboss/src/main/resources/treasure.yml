@@ -1,0 +1,39 @@
+# 暴君宝藏袋奖励配置
+rewards:
+  # 示例奖励1 - 使用序列化保存完整物品数据
+  netherite_sword:
+    chance: 15.0
+    serialized: "BASE64_ENCODED_ITEM_DATA_HERE"
+  
+  # 示例奖励2 - 使用配置方式定义物品
+  diamond_armor:
+    chance: 25.0
+    material: DIAMOND_CHESTPLATE
+    amount: 1
+    name: "&b暴君胸甲"
+    lore:
+      - "&7暴君掉落的珍贵护甲"
+      - "&7提供强大的保护"
+    enchantments:
+      protection: 4
+      unbreaking: 3
+    unbreakable: true
+  
+  # 示例奖励3 - 资源奖励
+  netherite_ingot:
+    chance: 50.0
+    material: NETHERITE_INGOT
+    min_amount: 2
+    max_amount: 5
+    name: "&6暴君精华"
+    lore:
+      - "&7暴君力量的结晶"
+  
+  # 示例奖励4 - 附魔书
+  enchanted_book:
+    chance: 30.0
+    material: ENCHANTED_BOOK
+    amount: 1
+    name: "&d暴君魔法书"
+    lore:
+      - "&7蕴含强大魔法的书籍"

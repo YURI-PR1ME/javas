@@ -1,0 +1,17 @@
+name: HiddenScore
+version: 1.0.0
+main: com.yourname.hiddenscore.HiddenScorePlugin
+api-version: 1.21
+author: YourName
+description: 隐藏分系统 - 记录玩家各种行为的隐藏分数
+
+commands:
+  hiddenscore:
+    description: 隐藏分系统命令
+    usage: /<command> [view|lowestcredit|reload]
+    permission: hiddenscore.admin
+
+permissions:
+  hiddenscore.admin:
+    description: 隐藏分系统管理权限
+    default: op

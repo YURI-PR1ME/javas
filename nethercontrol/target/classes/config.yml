@@ -1,0 +1,23 @@
+# Nether Control Plugin Configuration
+
+# Whether nether portals are unlocked by default
+unlocked: false
+
+# Star item settings
+star-item:
+  name: "&6沉星"
+  lore:
+    - "&7右键使用解锁地狱门限制"
+    - "&e使用后所有玩家可以自由进出地狱"
+    - "&c一次性物品，使用后消失"
+
+# Messages
+messages:
+  portal-blocked: "&c❌ 地狱门访问已被封锁！使用沉星物品解锁。"
+  portal-unlocked: "&a✨ 地狱门限制已解除！现在可以自由进出地狱。"
+  star-used: "&a✨ 你使用了沉星，地狱门限制已解除！"
+  star-given: "&a✅ 你获得了沉星物品。"
+  no-permission: "&c❌ 你没有权限执行此命令。"
+  reloaded: "&a✅ 配置已重载。"
+  status-unlocked: "&a🔓 地狱门限制：已解除"
+  status-locked: "&c🔒 地狱门限制：已封锁"

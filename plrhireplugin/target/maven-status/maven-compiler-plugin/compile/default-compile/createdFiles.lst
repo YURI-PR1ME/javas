@@ -1,0 +1,13 @@
+com/yourname/playerhireplugin/HireGUI.class
+com/yourname/playerhireplugin/TrackingCompass.class
+com/yourname/playerhireplugin/HireContract.class
+com/yourname/playerhireplugin/HireListener.class
+com/yourname/playerhireplugin/HireManager.class
+com/yourname/playerhireplugin/HireCommand.class
+com/yourname/playerhireplugin/HireSession.class
+com/yourname/playerhireplugin/HireSession$SessionStatus.class
+com/yourname/playerhireplugin/CommunicationBook.class
+com/yourname/playerhireplugin/AssassinProfile.class
+com/yourname/playerhireplugin/HireContract$ContractStatus.class
+com/yourname/playerhireplugin/PlayerHirePlugin.class
+com/yourname/playerhireplugin/HireCommand$1.class

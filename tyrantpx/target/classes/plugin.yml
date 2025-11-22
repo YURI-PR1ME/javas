@@ -1,0 +1,18 @@
+name: TyrantPickaxe
+version: '1.0.0'
+main: com.yourname.tyrantpickaxe.TyrantPickaxePlugin
+api-version: '1.21'
+description: Adds the powerful Tyrant Pickaxe with special abilities
+author: YourName
+website: https://yourwebsite.com
+
+commands:
+  tyrantpickaxe:
+    description: Get the Tyrant Pickaxe
+    usage: /tyrantpickaxe
+    permission: tyrantpickaxe.give
+
+permissions:
+  tyrantpickaxe.give:
+    description: Allows giving the Tyrant Pickaxe
+    default: op

@@ -1,0 +1,34 @@
+name: ViralFirePlugin
+version: 1.0.0
+main: com.example.viralfire.ViralFirePlugin
+api-version: 1.21
+author: YourName
+description: 炎拳病毒火焰插件 - 释放无法控制的病毒火焰
+
+commands:
+  getfirewand:
+    description: 获取炎拳病毒魔杖
+    usage: /getfirewand
+  getfirewandoneuse:
+    description: 获取一次性劣化版病毒魔杖
+    usage: /getfirewandoneuse
+  getzerostone:
+    description: 获取零度石
+    usage: /getzerostone
+  cureall:
+    description: 清除所有病毒火焰
+    usage: /cureall
+
+permissions:
+  viralfire.wand:
+    description: 允许使用病毒魔杖命令
+    default: op
+  viralfire.wand.oneuse:
+    description: 允许使用一次性病毒魔杖命令
+    default: op
+  viralfire.stone:
+    description: 允许使用零度石命令
+    default: op
+  viralfire.admin:
+    description: 管理员权限
+    default: op

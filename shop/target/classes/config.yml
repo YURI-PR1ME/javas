@@ -1,0 +1,75 @@
+# 商店插件配置
+shop:
+  # 商店终端设置
+  terminal:
+    material: "ENDER_CHEST"
+    name: "&6商店终端"
+    lore:
+      - "&7右键打开商店"
+      - "&e使用信用点购买物品"
+      - "&c合成获得"
+  
+  # 合成配方（显示用）
+  recipe:
+    shape:
+      - "DED"
+      - "EOE" 
+      - "DED"
+    ingredients:
+      D: "DIAMOND"
+      E: "EMERALD"
+      O: "OBSIDIAN"
+  
+  # GUI设置
+  gui:
+    title: "&8信用点商店"
+    rows: 6
+    categories:
+      - name: "&a武器"
+        slot: 10
+        icon: "DIAMOND_SWORD"
+      - name: "&b工具" 
+        slot: 12
+        icon: "DIAMOND_PICKAXE"
+      - name: "&c防具"
+        slot: 14
+        icon: "DIAMOND_CHESTPLATE"
+      - name: "&d食物"
+        slot: 16
+        icon: "GOLDEN_APPLE"
+      - name: "&e特殊"
+        slot: 28
+        icon: "TOTEM_OF_UNDYING"
+      - name: "&6方块"
+        slot: 30
+        icon: "DIAMOND_BLOCK"
+      - name: "&9材料"
+        slot: 32
+        icon: "DIAMOND"
+      - name: "&5附魔"
+        slot: 34
+        icon: "ENCHANTED_BOOK"
+  
+  # 默认商品
+  default-items:
+    diamond_sword:
+      name: "&b钻石剑"
+      material: "DIAMOND_SWORD"
+      price: 15
+      category: "weapons"
+      lore:
+        - "&7锋利 V"
+        - "&7耐久 III"
+        - ""
+        - "&6价格: &e15 信用点"
+    efficiency_pickaxe:
+      name: "&6效率V钻石镐"
+      material: "DIAMOND_PICKAXE" 
+      price: 25
+      category: "tools"
+      lore:
+        - "&7效率 V"
+        - "&7耐久 III"
+        - "&7时运 III"
+        - ""
+        - "&6价格: &e25 信用点"

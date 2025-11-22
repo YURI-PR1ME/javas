@@ -1,0 +1,23 @@
+name: ApocolypsPlugin
+version: 1.0.0
+main: com.example.apocolyps.ApocolypsPlugin
+api-version: "1.19"
+author: Developer
+description: AI奴隶主插件，生成会建筑和攻击的AI玩家
+
+commands:
+  apocontrol:
+    description: 控制天启AI玩家
+    usage: |
+      /apocontrol init - 初始化绑定AI
+      /apocontrol spawn - 生成一个绑定AI
+      /apocontrol remove - 移除所有AI玩家
+      /apocontrol setlimit <数量> - 设置绑定AI上限
+      /apocontrol getwand - 获取指挥棒
+      /apocontrol stats - 查看统计信息
+    permission: apocolyps.admin
+
+permissions:
+  apocolyps.admin:
+    description: 完全控制AI奴隶主插件
+    default: op

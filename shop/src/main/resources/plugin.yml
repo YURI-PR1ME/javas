@@ -1,0 +1,28 @@
+name: ShopPlugin
+version: 1.0.0
+main: com.yourname.shopplugin.ShopPlugin
+api-version: 1.19
+depend: [CreditPlugin]
+description: 信用点商店系统
+author: YourName
+
+commands:
+  shop:
+    description: 商店管理命令
+    usage: /shop <admin|reload|give|giveterminal|add|remove>
+    permission: shop.admin
+    aliases: [shops, store]
+
+permissions:
+  shop.use:
+    description: 使用商店基础功能
+    default: true
+  shop.admin:
+    description: 管理商店权限
+    default: op
+  shop.*:
+    description: 所有商店权限
+    default: op
+    children:
+      shop.use: true
+      shop.admin: true

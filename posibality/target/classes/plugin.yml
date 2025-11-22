@@ -1,0 +1,27 @@
+name: SpawnSelector
+version: 1.0.0
+main: com.yourname.spawnselector.SpawnSelector
+api-version: 1.21
+description: A spawn point selection plugin
+author: YourName
+
+commands:
+  spawn:
+    description: Manage spawn points
+    usage: /<command> <add|remove|list|reload>
+    permission: spawnselector.admin
+  choosestart:
+    description: Choose your spawn point
+    usage: /choosestart
+  spawnreset:
+    description: Reset a player's spawn choice
+    usage: /spawnreset <player>
+    permission: spawnselector.admin
+
+permissions:
+  spawnselector.admin:
+    description: Admin permission for spawn selector
+    default: op
+  spawnselector.use:
+    description: Permission to use spawn selector
+    default: true

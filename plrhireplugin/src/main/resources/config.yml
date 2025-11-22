@@ -1,0 +1,39 @@
+# 玩家雇佣市场插件配置
+
+# 注册成为刺客的费用（信用点）
+registration-fee: 10
+
+# 合约超时时间（毫秒），默认24小时
+contract-timeout: 86400000
+
+# 玩家使用雇佣市场的冷却时间（毫秒），默认5分钟
+cooldown-time: 300000
+
+# 通讯设置
+communication:
+  # 通讯书最大使用次数
+  max-uses: 10
+  # 通讯书冷却时间（秒）
+  cooldown: 30
+
+# 追踪指南针设置
+tracking:
+  # 更新频率（ticks）
+  update-interval: 20
+  # 最大追踪距离（格）
+  max-distance: 200
+
+# GUI设置
+gui:
+  # 自动关闭时间（秒，0为不自动关闭）
+  auto-close: 300
+  # 每页显示项目数量
+  items-per-page: 45
+
+# 消息配置
+messages:
+  prefix: "&8[&6雇佣市场&8]"
+  no-permission: "&c你没有权限使用此功能"
+  not-enough-credits: "&c信用点不足"
+  contract-success: "&a合约完成！获得 {amount} 点信用点"
+  contract-failed: "&c合约失败"

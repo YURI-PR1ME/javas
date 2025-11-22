@@ -1,0 +1,13 @@
+com/yourname/arenaplugin/Bet.class
+com/yourname/arenaplugin/ArenaListener.class
+com/yourname/arenaplugin/ArenaCommand.class
+com/yourname/arenaplugin/ArenaCommand$1.class
+com/yourname/arenaplugin/ArenaPlugin.class
+com/yourname/arenaplugin/Arena.class
+com/yourname/arenaplugin/ArenaManager$2.class
+com/yourname/arenaplugin/ArenaManager$1.class
+com/yourname/arenaplugin/ArenaManager.class
+com/yourname/arenaplugin/Team.class
+com/yourname/arenaplugin/ArenaState.class
+com/yourname/arenaplugin/BetTier.class
+com/yourname/arenaplugin/BetManager.class

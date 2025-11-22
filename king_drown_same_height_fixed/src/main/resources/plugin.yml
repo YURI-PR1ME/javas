@@ -1,0 +1,31 @@
+name: DrownedKing
+version: 1.0.0
+main: com.yourname.drownedking.DrownedKingPlugin
+api-version: "1.21"
+description: 独立的溺尸王Boss插件
+author: YourName
+website: https://example.com
+
+commands:
+  drownedking:
+    description: 溺尸王Boss系统命令
+    usage: /<command> <spawn|list|reload|help>
+    permission: drownedking.use
+    aliases: [dk, boss]
+
+permissions:
+  drownedking.use:
+    description: 使用溺尸王基础命令
+    default: op
+  drownedking.spawn:
+    description: 生成溺尸王
+    default: op
+  drownedking.list:
+    description: 查看活跃Boss列表
+    default: op
+  drownedking.reload:
+    description: 重载插件配置
+    default: op
+  drownedking.admin:
+    description: 所有管理员权限
+    default: op

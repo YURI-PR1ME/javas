@@ -1,0 +1,8 @@
+com/yourname/spawnselector/models/SpawnPoint.class
+com/yourname/spawnselector/managers/ConfigManager.class
+com/yourname/spawnselector/commands/SpawnCommand.class
+com/yourname/spawnselector/managers/PlayerStateManager.class
+com/yourname/spawnselector/managers/SpawnManager.class
+com/yourname/spawnselector/managers/PlayerDataManager.class
+com/yourname/spawnselector/SpawnSelector.class
+com/yourname/spawnselector/listeners/PlayerListener.class

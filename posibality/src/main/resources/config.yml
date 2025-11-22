@@ -1,0 +1,22 @@
+# SpawnSelector 配置文件
+
+# 消息配置
+messages:
+  welcome: "&a请选择你的出生点！"
+  already-chosen: "&c你已经选择过出生点了！"
+  spawn-selected: "&a你已选择出生点: &e%spawn%"
+  no-permission: "&c你没有权限使用此命令！"
+  spawn-added: "&a成功添加出生点: &e%spawn%"
+  spawn-removed: "&a成功移除出生点: &e%spawn%"
+  spawn-not-found: "&c出生点未找到！"
+  invalid-usage: "&c用法不正确！"
+
+# 设置
+settings:
+  freeze-on-join: true
+  allow-movement-before-choice: false
+  auto-kick-if-no-choice: false
+  choice-timeout-seconds: 300
+
+# 出生点配置 (将由插件自动生成)
+spawn-points: {}

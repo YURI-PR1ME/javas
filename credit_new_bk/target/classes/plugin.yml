@@ -1,0 +1,43 @@
+name: CreditPlugin
+version: 2.0.0
+main: com.yourname.creditplugin.CreditPlugin
+api-version: 1.19
+author: YourName
+description: 完整的信用点系统，包含交易、复活、杀人日和商店功能
+website: YOUR_WEBSITE_HERE
+
+commands:
+  credit:
+    description: 信用点系统主命令
+    usage: /credit
+    aliases: [credits, cp]
+  shop:
+    description: 打开信用点商店
+    usage: /shop
+    aliases: [store, market]
+  shopadmin:
+    description: 商店管理命令
+    usage: /shopadmin
+    aliases: [sadmin]
+
+permissions:
+  credit.use:
+    description: 使用基础信用点功能
+    default: true
+  credit.admin:
+    description: 管理信用点系统
+    default: op
+  credit.shop.use:
+    description: 使用商店功能
+    default: true
+  credit.shop.admin:
+    description: 管理商店
+    default: op
+  credit.*:
+    description: 所有信用点权限
+    default: op
+    children:
+      credit.use: true
+      credit.admin: true
+      credit.shop.use: true
+      credit.shop.admin: true

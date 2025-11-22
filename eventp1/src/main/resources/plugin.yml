@@ -1,0 +1,20 @@
+# plugin.yml
+name: EventPart1
+version: 1.0.0
+main: com.yourname.eventpart1.EventPart1
+api-version: 1.19
+depend: [CreditPlugin]
+
+commands:
+  event:
+    description: 事件系统控制命令
+    usage: /<command> <socialpurification|resourcetax|status>
+    permission: eventpart1.use
+
+permissions:
+  eventpart1.use:
+    description: 使用事件系统基础命令
+    default: true
+  eventpart1.admin:
+    description: 管理事件系统
+    default: op

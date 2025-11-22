@@ -1,0 +1,13 @@
+com/yourname/assassinplugin/PlayerContractSession.class
+com/yourname/assassinplugin/AssassinContract.class
+com/yourname/assassinplugin/PlayerAssassin.class
+com/yourname/assassinplugin/AssassinManager$2.class
+com/yourname/assassinplugin/AssassinManager$1.class
+com/yourname/assassinplugin/AssassinGUIListener.class
+com/yourname/assassinplugin/AssassinPlugin.class
+com/yourname/assassinplugin/AssassinManager.class
+com/yourname/assassinplugin/AssassinListener.class
+com/yourname/assassinplugin/AssassinGUI.class
+com/yourname/assassinplugin/AssassinCommand.class
+com/yourname/assassinplugin/CommunicationBookListener.class
+com/yourname/assassinplugin/AssassinManager$3.class
