@@ -1,0 +1,22 @@
+name: CreditExchange
+version: 1.0.0
+main: com.yourname.creditexchange.CreditExchangePlugin
+api-version: 1.21
+depend: [CreditPlugin]
+description: 信用点兑换系统
+author: YourName
+
+commands:
+  exchange:
+    description: 兑换信用点
+    usage: /exchange
+    permission: creditexchange.use
+    aliases: [cex, exch]
+
+permissions:
+  creditexchange.use:
+    description: 使用信用点兑换
+    default: true
+  creditexchange.admin:
+    description: 管理信用点兑换
+    default: op

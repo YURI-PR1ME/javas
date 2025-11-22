@@ -1,0 +1,8 @@
+com/yourname/creditexchange/CreditExchangePlugin.class
+com/yourname/creditexchange/ExchangeCommand.class
+com/yourname/creditexchange/ExchangeManager$ExchangeResult.class
+com/yourname/creditexchange/ExchangeManager$PreciousExchangeRule.class
+com/yourname/creditexchange/ExchangeManager.class
+com/yourname/creditexchange/ExchangeManager$FoodExchangeRule.class
+com/yourname/creditexchange/ExchangeManager$1.class
+com/yourname/creditexchange/ExchangeCommand$1.class

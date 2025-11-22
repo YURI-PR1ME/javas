@@ -1,0 +1,14 @@
+# 信用点兑换系统配置
+
+# 食物兑换设置
+food-exchange:
+  max-points-per-period: 100
+  cooldown-days: 2
+
+# 消息配置
+messages:
+  success: "&a✅ 成功兑换 {points} 点信用点！"
+  insufficient-items: "&c❌ 需要至少 {amount} 个{item}！"
+  cooldown-active: "&c❌ {item} 兑换冷却中，剩余: {time}"
+  max-limit-reached: "&c❌ 今日食物兑换已达上限（{max}点）！"
+  invalid-item: "&c❌ 该物品不可兑换信用点！"
