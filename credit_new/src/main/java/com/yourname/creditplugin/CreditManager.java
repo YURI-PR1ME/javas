@@ -84,8 +84,7 @@ public class CreditManager {
                     player.spigot().respawn();
                     player.setGameMode(GameMode.SURVIVAL);
                     
-                    // 传送到地狱
-                    teleportToNether(player);
+                    // 不再在这里强制传送，让PlayerRespawnEvent处理重生位置
                     player.sendMessage(ChatColor.RED + "🔥 由于信用点不足，你在地狱复活了！");
                 }
             }, 1L);
@@ -117,30 +116,47 @@ public class CreditManager {
     
     // 寻找安全的位置
     public Location findSafeLocation(World world, Location center) {
-        for (int x = -10; x <= 10; x++) {
-            for (int z = -10; z <= 10; z++) {
-                Location checkLoc = center.clone().add(x * 5, 0, z * 5);
-                int y = world.getHighestBlockYAt(checkLoc);
-                Location safeLoc = new Location(world, checkLoc.getX(), y + 1, checkLoc.getZ());
-                
-                // 检查位置是否安全（不是岩浆，不是虚空）
-                if (isLocationSafe(safeLoc)) {
-                    return safeLoc;
+        // 首先检查中心位置是否安全
+        if (isLocationSafe(center)) {
+            return center.clone().add(0, 1, 0); // 在安全方块上方一格
+        }
+        
+        // 在周围寻找安全位置
+        for (int radius = 1; radius <= 10; radius++) {
+            for (int x = -radius; x <= radius; x++) {
+                for (int z = -radius; z <= radius; z++) {
+                    // 只检查最外层
+                    if (Math.abs(x) != radius && Math.abs(z) != radius) continue;
+                    
+                    Location checkLoc = center.clone().add(x, 0, z);
+                    int y = world.getHighestBlockYAt(checkLoc);
+                    Location safeLoc = new Location(world, checkLoc.getX(), y + 1, checkLoc.getZ());
+                    
+                    // 检查位置是否安全
+                    if (isLocationSafe(safeLoc)) {
+                        return safeLoc;
+                    }
                 }
             }
         }
-        return center;
+        
+        // 如果没找到安全位置，返回原始位置上方
+        return center.clone().add(0, 10, 0);
     }
     
     // 检查位置是否安全
     private boolean isLocationSafe(Location location) {
         Material blockType = location.getBlock().getType();
         Material belowType = location.clone().subtract(0, 1, 0).getBlock().getType();
+        Material aboveType = location.clone().add(0, 1, 0).getBlock().getType();
         
         return blockType == Material.AIR && 
-               belowType != Material.AIR && 
+               aboveType == Material.AIR &&
+               belowType.isSolid() && 
                belowType != Material.LAVA && 
-               belowType != Material.FIRE;
+               belowType != Material.FIRE &&
+               belowType != Material.MAGMA_BLOCK &&
+               belowType != Material.CAMPFIRE;
     }
     
     // 检查杀人日（基于游戏时间和概率）
