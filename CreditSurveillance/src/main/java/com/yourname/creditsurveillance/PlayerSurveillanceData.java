@@ -117,7 +117,6 @@ public class PlayerSurveillanceData {
         
         guardianIds.add(guardian.getUniqueId());
         
-        player.sendMessage("§c⚠ Armageddon is here!");
     }
     
     // 移除最老的监管者
