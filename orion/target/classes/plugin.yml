@@ -1,0 +1,54 @@
+name: OrionBossPlugin
+version: 1.0.0
+main: com.yourname.orionboss.OrionBossPlugin
+api-version: 1.21
+description: Orion Boss Plugin with treasure bag system
+author: YourName
+website: https://yourwebsite.com
+
+commands:
+  spawnorion:
+    description: Spawn Orion Boss (console only)
+    usage: /spawnorion
+    permission: orionboss.console
+  orionreload:
+    description: Reload Orion plugin configuration
+    usage: /orionreload
+    permission: orionboss.reload
+  orionaddtreasure:
+    description: Add item to treasure bag
+    usage: /orionaddtreasure <rewardId> <chance>
+    permission: orionboss.addtreasure
+  orionlisttreasure:
+    description: List all treasure bag items
+    usage: /orionlisttreasure
+    permission: orionboss.listtreasure
+  orionremovetreasure:
+    description: Remove item from treasure bag
+    usage: /orionremovetreasure <rewardId>
+    permission: orionboss.removetreasure
+
+permissions:
+  orionboss.*:
+    description: All Orion Boss permissions
+    children:
+      orionboss.console: true
+      orionboss.reload: true
+      orionboss.addtreasure: true
+      orionboss.listtreasure: true
+      orionboss.removetreasure: true
+  orionboss.console:
+    description: Console spawn Orion Boss permission
+    default: false
+  orionboss.reload:
+    description: Reload configuration permission
+    default: op
+  orionboss.addtreasure:
+    description: Add treasure bag items permission
+    default: op
+  orionboss.listtreasure:
+    description: View treasure bag items permission
+    default: op
+  orionboss.removetreasure:
+    description: Remove treasure bag items permission
+    default: op

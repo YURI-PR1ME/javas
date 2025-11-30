@@ -1,0 +1,56 @@
+# Orion Treasure Bag Reward Configuration
+rewards:
+  # Example reward 1 - Using serialization for complete item data
+  orion_sword:
+    chance: 10.0
+    serialized: "BASE64_ENCODED_ITEM_DATA_HERE"
+  
+  # Example reward 2 - Using configuration to define item
+  celestial_armor:
+    chance: 15.0
+    material: NETHERITE_CHESTPLATE
+    amount: 1
+    name: "&6Celestial Chestplate"
+    lore:
+      - "&7Forged from stars by Orion"
+      - "&7Provides divine protection"
+    enchantments:
+      protection: 4
+      unbreaking: 3
+      mending: 1
+    unbreakable: true
+  
+  # Example reward 3 - Resource reward
+  star_fragment:
+    chance: 40.0
+    material: NETHERITE_INGOT
+    min_amount: 3
+    max_amount: 8
+    name: "&bStar Fragment"
+    lore:
+      - "&7A piece of fallen star"
+      - "&7Glows with cosmic energy"
+  
+  # Example reward 4 - Enchanted book
+  cosmic_tome:
+    chance: 25.0
+    material: ENCHANTED_BOOK
+    amount: 1
+    name: "&5Cosmic Tome"
+    lore:
+      - "&7Knowledge from beyond the stars"
+  
+  # Example reward 5 - Special item
+  orion_bow:
+    chance: 12.0
+    material: BOW
+    amount: 1
+    name: "&6Orion's Bow"
+    lore:
+      - "&7The hunter's celestial weapon"
+      - "&7Never misses its target"
+    enchantments:
+      power: 5
+      infinity: 1
+      unbreaking: 3
+    unbreakable: true
