@@ -36,7 +36,9 @@ public class OrionBoss {
     private static final long CRYSTAL_COOLDOWN = 30000;
     private static final long RAIN_COOLDOWN = 35000;
     private static final long ULTIMATE_COOLDOWN = 60000;
-    
+// 在现有的冷却时间常量后添加
+private static final long EXECUTION_COOLDOWN = 45000;
+private long lastExecutionAttack = 0;    
     // Track players for void attack
     private final Map<UUID, Location> playerOriginalLocations = new HashMap<>();
     private final Map<UUID, BukkitRunnable> voidTasks = new HashMap<>();
@@ -76,52 +78,58 @@ public class OrionBoss {
         behaviorTask.runTaskTimer(plugin, 0L, 20L); // Run every second
     }
 
-    private void performRandomAttack() {
-        Player target = findNearestPlayer();
-        if (target == null) return;
+private void performRandomAttack() {
+    Player target = findNearestPlayer();
+    if (target == null) return;
 
-        long currentTime = System.currentTimeMillis();
-        List<Runnable> availableAttacks = new ArrayList<>();
+    long currentTime = System.currentTimeMillis();
+    List<Runnable> availableAttacks = new ArrayList<>();
 
-        // Check available attacks based on cooldown
-        if (currentTime - lastLavaAttack > LAVA_COOLDOWN) {
-            availableAttacks.add(() -> useLavaAttack(target));
-        }
-        if (currentTime - lastSkullAttack > SKULL_COOLDOWN) {
-            availableAttacks.add(() -> useSkullAttack(target));
-        }
-        if (currentTime - lastCloneAttack > CLONE_COOLDOWN) {
-            availableAttacks.add(() -> useCloneAttack());
-        }
-        if (currentTime - lastVoidAttack > VOID_COOLDOWN) {
-            availableAttacks.add(() -> useVoidAttack(target));
-        }
-        if (currentTime - lastCrystalAttack > CRYSTAL_COOLDOWN) {
-            availableAttacks.add(() -> useCrystalAttack(target));
-        }
-        if (currentTime - lastRainAttack > RAIN_COOLDOWN) {
-            availableAttacks.add(() -> useRainAttack(target));
-        }
-        if (currentTime - lastUltimateAttack > ULTIMATE_COOLDOWN) {
-            availableAttacks.add(() -> useUltimateAttack(target));
-        }
+    // 检查血量是否低于50%且Execution技能可用
+    boolean canUseExecution = boss.getHealth() < boss.getMaxHealth() * 0.5;
+    
+    // Check available attacks based on cooldown
+    if (currentTime - lastLavaAttack > LAVA_COOLDOWN) {
+        availableAttacks.add(() -> useLavaAttack(target));
+    }
+    if (currentTime - lastSkullAttack > SKULL_COOLDOWN) {
+        availableAttacks.add(() -> useSkullAttack(target));
+    }
+    if (currentTime - lastCloneAttack > CLONE_COOLDOWN) {
+        availableAttacks.add(() -> useCloneAttack());
+    }
+    if (currentTime - lastVoidAttack > VOID_COOLDOWN) {
+        availableAttacks.add(() -> useVoidAttack(target));
+    }
+    if (currentTime - lastCrystalAttack > CRYSTAL_COOLDOWN) {
+        availableAttacks.add(() -> useCrystalAttack(target));
+    }
+    if (currentTime - lastRainAttack > RAIN_COOLDOWN) {
+        availableAttacks.add(() -> useRainAttack(target));
+    }
+    if (currentTime - lastUltimateAttack > ULTIMATE_COOLDOWN) {
+        availableAttacks.add(() -> useUltimateAttack(target));
+    }
+    // 新增Execution技能检查
+    if (canUseExecution && currentTime - lastExecutionAttack > EXECUTION_COOLDOWN) {
+        availableAttacks.add(() -> useExecutionAttack(target));
+    }
 
-        if (!availableAttacks.isEmpty()) {
-            // Weight random attacks - basic attacks more frequent
-            int randomIndex = random.nextInt(availableAttacks.size() + 2); // +2 for basic attacks
-            if (randomIndex < availableAttacks.size()) {
-                availableAttacks.get(randomIndex).run();
+    if (!availableAttacks.isEmpty()) {
+        // 权重随机攻击 - 基础攻击更频繁
+        int randomIndex = random.nextInt(availableAttacks.size() + 2); // +2 for basic attacks
+        if (randomIndex < availableAttacks.size()) {
+            availableAttacks.get(randomIndex).run();
+        } else {
+            // 基础攻击
+            if (random.nextBoolean()) {
+                useLavaAttack(target);
             } else {
-                // Basic attack
-                if (random.nextBoolean()) {
-                    useLavaAttack(target);
-                } else {
-                    useSkullAttack(target);
-                }
+                useSkullAttack(target);
             }
         }
     }
-
+}
     private void useLavaAttack(Player target) {
         lastLavaAttack = System.currentTimeMillis();
         
@@ -487,8 +495,50 @@ public class OrionBoss {
         
         center.getWorld().playSound(center, Sound.BLOCK_LAVA_AMBIENT, 2.0f, 0.8f);
     }
+private void useExecutionAttack(Player target) {
+    lastExecutionAttack = System.currentTimeMillis();
+    
+    Bukkit.broadcastMessage("§4§lORION UNLEASHES EXECUTION! §c§lDRAGONS FROM ABYSS!");
+    
+    Location bossLoc = boss.getLocation();
+    
+    // 第一阶段：立即召唤2条龙（上方和下方各1条）
+    summonExecutionDragon(target, bossLoc.clone().add(0, 10, 0), 0.8f); // 上方龙
+    summonExecutionDragon(target, bossLoc.clone().subtract(0, 5, 0), 0.8f); // 下方龙
+    
+    // 第二阶段：1秒后召唤1条加速龙
+    new BukkitRunnable() {
+        @Override
+        public void run() {
+            if (!boss.isDead() && boss.isValid()) {
+                // 重新计算目标位置，因为玩家可能已经移动
+                Player currentTarget = findNearestPlayer();
+                if (currentTarget != null) {
+                    Location newBossLoc = boss.getLocation();
+                    summonExecutionDragon(currentTarget, newBossLoc.clone().add(0, 15, 0), 1.6f); // 速度翻倍
+                }
+            }
+        }
+    }.runTaskLater(plugin, 20L); // 1秒后
+    
+    // 技能特效
+    boss.getWorld().playSound(bossLoc, org.bukkit.Sound.ENTITY_ENDER_DRAGON_DEATH, 3.0f, 0.7f);
+    boss.getWorld().spawnParticle(org.bukkit.Particle.DRAGON_BREATH, bossLoc, 100, 5, 5, 5);
+    
+    target.sendTitle("§4§lEXECUTION", "§cDragons are coming!", 10, 40, 10);
+}
 
-    private void replaceLavaWithCrystals(Location center, int radius) {
+private void summonExecutionDragon(Player target, Location spawnLocation, float speed) {
+    ExecutionDragon executionDragon = new ExecutionDragon(plugin, target, speed, 40.0);
+    executionDragon.spawn(spawnLocation);
+    
+    // 生成时的局部特效
+    spawnLocation.getWorld().playSound(spawnLocation, 
+        org.bukkit.Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 0.8f);
+    spawnLocation.getWorld().spawnParticle(org.bukkit.Particle.PORTAL, 
+        spawnLocation, 30, 2, 2, 2);
+}
+private void replaceLavaWithCrystals(Location center, int radius) {
         List<EnderCrystal> crystals = new ArrayList<>();
         
         for (int x = -radius; x <= radius; x++) {
