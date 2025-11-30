@@ -48,10 +48,8 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(bossManager, this);
         
-        // 注册宝藏袋监听器
         getServer().getPluginManager().registerEvents(new TreasureBagListener(this, treasureManager), this);
         
-        // 加载宝藏袋配置
         loadTreasureConfig();
         
         getLogger().info("TyrantBossPlugin 已启用!");
@@ -73,7 +71,6 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         getLogger().info("TyrantBossPlugin 已禁用!");
     }
 
-    // 加载宝藏袋配置
     private void loadTreasureConfig() {
         treasureFile = new File(getDataFolder(), "treasure.yml");
         if (!treasureFile.exists()) {
@@ -83,13 +80,11 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         getLogger().info("宝藏袋配置已加载!");
     }
 
-    // 重新加载宝藏袋配置
     public void reloadTreasureConfig() {
         treasureConfig = YamlConfiguration.loadConfiguration(treasureFile);
         getLogger().info("宝藏袋配置已重新加载!");
     }
 
-    // 保存宝藏袋配置 - 只保留这一个方法
     public void saveTreasureConfig() {
         try {
             treasureConfig.save(treasureFile);
@@ -102,7 +97,6 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (command.getName().equalsIgnoreCase("spawntyrant")) {
-            // 检查是否是控制台或拥有特殊权限
             if (!(sender instanceof ConsoleCommandSender) && !sender.hasPermission("tyrantboss.console")) {
                 sender.sendMessage("§c这个指令只能通过召唤物品使用!");
                 return true;
@@ -163,7 +157,6 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
                 return true;
             }
             
-            // 添加物品到宝藏袋
             boolean success = treasureManager.addItemToTreasure(player, rewardId, chance);
             if (success) {
                 player.sendMessage("§a成功将手中物品添加到宝藏袋奖励中，ID: " + rewardId);
@@ -213,10 +206,8 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         TyrantBoss tyrantBoss = new TyrantBoss(boss, this);
         activeBosses.put(boss.getUniqueId(), tyrantBoss);
         
-        // 创建Boss血条
         createBossBar(boss);
         
-        // 开始Boss行为
         tyrantBoss.startBossBehavior();
     }
 
@@ -226,21 +217,17 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         boss.setPersistent(true);
         boss.setRemoveWhenFarAway(false);
         
-        // 设置属性 - 减少近战攻击力但增加血量
-        Objects.requireNonNull(boss.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(150.0); // 增加血量
+        Objects.requireNonNull(boss.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(150.0);
         boss.setHealth(150.0);
-        Objects.requireNonNull(boss.getAttribute(Attribute.ATTACK_DAMAGE)).setBaseValue(15.0); // 减少近战伤害
+        Objects.requireNonNull(boss.getAttribute(Attribute.ATTACK_DAMAGE)).setBaseValue(15.0);
         Objects.requireNonNull(boss.getAttribute(Attribute.MOVEMENT_SPEED)).setBaseValue(0.35);
         Objects.requireNonNull(boss.getAttribute(Attribute.FOLLOW_RANGE)).setBaseValue(50.0);
         
-        // 装备下界合金甲
         equipNetheriteArmor(boss);
         
-        // 给予镐子作为武器
         boss.getEquipment().setItemInMainHand(createTyrantPickaxe());
         boss.getEquipment().setItemInMainHandDropChance(0.0f);
         
-        // 添加免疫摔落伤害的效果
         boss.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, Integer.MAX_VALUE, 0, false, false));
     }
 
@@ -250,7 +237,6 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         boss.getEquipment().setLeggings(new ItemStack(Material.NETHERITE_LEGGINGS));
         boss.getEquipment().setBoots(new ItemStack(Material.NETHERITE_BOOTS));
         
-        // 设置装备不掉落
         boss.getEquipment().setHelmetDropChance(0.0f);
         boss.getEquipment().setChestplateDropChance(0.0f);
         boss.getEquipment().setLeggingsDropChance(0.0f);
@@ -279,12 +265,11 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         BossBar bossBar = Bukkit.createBossBar(
             "§6§l暴君 §c§lTyrant §7- §c❤ " + (int)boss.getHealth() + "/" + (int)boss.getMaxHealth(),
             BarColor.RED,
-            BarStyle.SEGMENTED_12 // 使用12段血条显示更精确
+            BarStyle.SEGMENTED_12
         );
         
         bossBar.setProgress(boss.getHealth() / boss.getMaxHealth());
         
-        // 向所有在线玩家显示血条
         for (Player player : Bukkit.getOnlinePlayers()) {
             bossBar.addPlayer(player);
         }
@@ -301,7 +286,6 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         
         bossBar.setProgress(ghost.getHealth() / ghost.getMaxHealth());
         
-        // 向所有在线玩家显示血条
         for (Player player : Bukkit.getOnlinePlayers()) {
             bossBar.addPlayer(player);
         }
@@ -350,8 +334,7 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             TyrantBoss tyrantBoss = activeBosses.get(boss.getUniqueId());
             
             if (tyrantBoss != null) {
-                // 检查无敌状态
-                if (tyrantBoss.isInvulnerable()) {
+                if (tyrantBoss.isInvulnerable() || tyrantBoss.isDying()) {
                     event.setCancelled(true);
                     return;
                 }
@@ -359,7 +342,6 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
                 tyrantBoss.onDamage(event);
                 updateBossBar(boss);
                 
-                // 记录对Boss的伤害
                 if (event.getDamager() instanceof Player) {
                     tyrantBoss.recordPlayerDamage((Player) event.getDamager());
                 }
@@ -375,29 +357,24 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    // 新增：处理暴君摔落伤害
     @EventHandler
     public void onBossFallDamage(EntityDamageEvent event) {
         if (activeBosses.containsKey(event.getEntity().getUniqueId())) {
-            // 如果是摔落伤害，取消它
             if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
                 event.setCancelled(true);
             }
         }
     }
 
-    // 新增：保护宝藏袋不被烧毁
     @EventHandler
     public void onTreasureBagDamage(EntityDamageEvent event) {
         if (event.getEntity() instanceof Item) {
             Item item = (Item) event.getEntity();
             ItemStack itemStack = item.getItemStack();
             
-            // 检查是否是宝藏袋
             if (itemStack.getType() == Material.BUNDLE && itemStack.hasItemMeta()) {
                 ItemMeta meta = itemStack.getItemMeta();
                 if (meta.hasDisplayName() && meta.getDisplayName().equals("§6§l暴君宝藏袋")) {
-                    // 取消所有可能破坏宝藏袋的伤害
                     if (event.getCause() == EntityDamageEvent.DamageCause.FIRE ||
                         event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK ||
                         event.getCause() == EntityDamageEvent.DamageCause.LAVA ||
@@ -410,6 +387,7 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         }
     }
 
+    // 修改后的 onBossDeath 方法 - 处理终极技能保护
     @EventHandler
     public void onBossDeath(EntityDeathEvent event) {
         if (activeBosses.containsKey(event.getEntity().getUniqueId())) {
@@ -417,6 +395,16 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             TyrantBoss tyrantBoss = activeBosses.remove(boss.getUniqueId());
             
             if (tyrantBoss != null) {
+                // 检查是否应该在终极技能后死亡
+                if (tyrantBoss.isShouldDieAfterUltimate()) {
+                    // 如果终极技能还未结束，延迟死亡处理
+                    if (tyrantBoss.isUsingUltimate()) {
+                        event.setCancelled(true);
+                        boss.setHealth(1); // 保持1点生命值，等待终极技能结束
+                        return;
+                    }
+                }
+                
                 tyrantBoss.cleanup();
             }
             
@@ -425,14 +413,11 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
                 bossBar.removeAll();
             }
             
-            // 清除掉落物
             event.getDrops().clear();
             event.setDroppedExp(0);
             
-            // 生成暴君残魂
             spawnTyrantGhost(boss.getLocation());
             
-            // 广播消息
             Bukkit.broadcastMessage("§6§l暴君已被击败! 但它的残魂依然存在! §5小心暴君残魂的轰炸和龙息!");
         } else if (activeGhostBosses.containsKey(event.getEntity().getUniqueId())) {
             Ghast ghost = (Ghast) event.getEntity();
@@ -447,20 +432,16 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
                 bossBar.removeAll();
             }
             
-            // 清除掉落物
             event.getDrops().clear();
             event.setDroppedExp(0);
             
-            // 生成暴君宝藏袋
             createTreasureBag(ghost.getLocation());
             
-            // 广播最终胜利消息
             Bukkit.broadcastMessage("§6§l暴君残魂已被彻底消灭! §e荣耀归于勇者们!");
             Bukkit.broadcastMessage("§6§l暴君宝藏袋已掉落! §e快去收集战利品吧!");
         }
     }
 
-    // 新增：生成暴君残魂
     private void spawnTyrantGhost(Location location) {
         Ghast ghost = (Ghast) location.getWorld().spawnEntity(location, EntityType.GHAST);
         setupGhostAttributes(ghost);
@@ -468,10 +449,8 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         TyrantGhostBoss ghostBoss = new TyrantGhostBoss(ghost, this);
         activeGhostBosses.put(ghost.getUniqueId(), ghostBoss);
         
-        // 创建Boss血条
         createGhostBossBar(ghost);
         
-        // 开始Boss行为
         ghostBoss.startBossBehavior();
     }
 
@@ -481,17 +460,13 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         ghost.setPersistent(true);
         ghost.setRemoveWhenFarAway(false);
         
-        // 设置属性 - 80血量，无护甲
         Objects.requireNonNull(ghost.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(80.0);
         ghost.setHealth(80.0);
         
-        // 免疫摔落伤害
         ghost.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, Integer.MAX_VALUE, 0, false, false));
     }
 
-    // 新增：创建暴君宝藏袋
     private void createTreasureBag(Location location) {
-        // 创建宝藏袋物品
         ItemStack treasureBag = new ItemStack(Material.BUNDLE);
         ItemMeta meta = treasureBag.getItemMeta();
         
@@ -504,30 +479,25 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
                 "§e右键点击打开"
             ));
             
-            // 添加附魔光效
             meta.addEnchant(Enchantment.LUCK_OF_THE_SEA, 1, true);
             meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
             
             treasureBag.setItemMeta(meta);
         }
         
-        // 掉落宝藏袋
         Item item = location.getWorld().dropItemNaturally(location, treasureBag);
         item.setCustomName("§6§l暴君宝藏袋");
         item.setCustomNameVisible(true);
         item.setGlowing(true);
-        item.setUnlimitedLifetime(true); // 防止消失
-        item.setInvulnerable(true); // 设置无敌，防止被破坏
+        item.setUnlimitedLifetime(true);
+        item.setInvulnerable(true);
         
-        // 添加粒子效果
         location.getWorld().spawnParticle(Particle.FLAME, location, 50, 1, 1, 1);
         location.getWorld().playSound(location, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.8f);
         
-        // 设置宝藏袋被捡起时的行为
         setupTreasureBagPickup(item);
     }
 
-    // 新增：设置宝藏袋被捡起时的行为
     private void setupTreasureBagPickup(Item treasureItem) {
         new BukkitRunnable() {
             @Override
@@ -537,11 +507,9 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
                     return;
                 }
                 
-                // 持续粒子效果
                 Location loc = treasureItem.getLocation();
                 loc.getWorld().spawnParticle(Particle.END_ROD, loc, 3, 0.2, 0.2, 0.2);
                 
-                // 检查是否有玩家在附近
                 for (Player player : loc.getWorld().getPlayers()) {
                     if (player.getLocation().distance(loc) <= 3) {
                         player.sendActionBar("§6附近有暴君宝藏袋!");
@@ -561,13 +529,11 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
                     Location hitLocation = event.getEntity().getLocation();
                     hitLocation.getBlock().setType(Material.LAVA);
                     
-                    // 创建爆炸效果
                     createMagmaExplosion(hitLocation);
                 }
             } else if (fireball.getShooter() instanceof Ghast) {
                 Ghast shooter = (Ghast) fireball.getShooter();
                 if (activeGhostBosses.containsKey(shooter.getUniqueId())) {
-                    // 暴君残魂的火球不生成岩浆，但爆炸威力更大
                     Location hitLocation = event.getEntity().getLocation();
                     hitLocation.getWorld().createExplosion(hitLocation, 4.0f, true, true, shooter);
                 }
@@ -582,11 +548,9 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             if (skull.getShooter() instanceof WitherSkeleton) {
                 WitherSkeleton shooter = (WitherSkeleton) skull.getShooter();
                 if (activeBosses.containsKey(shooter.getUniqueId())) {
-                    // 检查是否是爆炸骷髅头
                     if (skull.isCharged()) {
                         Location hitLocation = event.getEntity().getLocation();
-                        // 创建凋零爆炸效果，但不伤害暴君自己
-                        hitLocation.getWorld().createExplosion(hitLocation, 3.0f, true, true, shooter); // 将暴君设为爆炸源，这样爆炸不会伤害自己
+                        hitLocation.getWorld().createExplosion(hitLocation, 3.0f, true, true, shooter);
                         hitLocation.getWorld().spawnParticle(Particle.SMOKE, hitLocation, 30, 1, 1, 1);
                     }
                 }
@@ -594,7 +558,6 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    // 新增：处理龙息攻击
     @EventHandler
     public void onDragonBreathHit(ProjectileHitEvent event) {
         if (event.getEntity() instanceof DragonFireball) {
@@ -604,7 +567,6 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
                 if (activeGhostBosses.containsKey(shooter.getUniqueId())) {
                     Location hitLocation = event.getEntity().getLocation();
                     
-                    // 创建龙息区域效果
                     createDragonBreathArea(hitLocation);
                 }
             }
@@ -612,21 +574,18 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
     }
 
     private void createDragonBreathArea(Location location) {
-        // 创建龙息云
         AreaEffectCloud cloud = location.getWorld().spawn(location, AreaEffectCloud.class);
         cloud.setRadius(5.0f);
         cloud.setRadiusOnUse(-0.5f);
         cloud.setRadiusPerTick(-0.01f);
-        cloud.setDuration(200); // 10秒
+        cloud.setDuration(200);
         cloud.setParticle(Particle.DRAGON_BREATH);
         cloud.setColor(Color.PURPLE);
         
-        // 添加效果
         cloud.addCustomEffect(new PotionEffect(PotionEffectType.WITHER, 100, 1), true);
         cloud.addCustomEffect(new PotionEffect(PotionEffectType.POISON, 100, 1), true);
         cloud.addCustomEffect(new PotionEffect(PotionEffectType.SLOWNESS, 100, 1), true);
         
-        // 音效和粒子
         location.getWorld().playSound(location, Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 0.5f);
         location.getWorld().spawnParticle(Particle.DRAGON_BREATH, location, 50, 2, 2, 2);
     }
