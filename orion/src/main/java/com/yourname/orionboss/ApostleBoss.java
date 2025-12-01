@@ -30,13 +30,20 @@ public class ApostleBoss {
     // 技能冷却
     private long lastFlameAttack = 0;
     private long lastPotionRain = 0;
+    private long lastCosmicStorm = 0; // 新增：宇宙雷暴冷却
     private static final long FLAME_COOLDOWN = 15000;
     private static final long POTION_RAIN_COOLDOWN = 20000;
+    private static final long COSMIC_STORM_COOLDOWN = 35000; // 35秒冷却
 
     // 镜像管理
     private final List<Husk> playerMirrors = new ArrayList<>();
     private BukkitRunnable swapTask;
     private final Map<UUID, Integer> playerMirrorCount = new HashMap<>();
+    
+    // 宇宙雷暴技能状态
+    private boolean isCastingCosmicStorm = false;
+    private BukkitRunnable cosmicStormTask;
+    private int cosmicStormTicks = 0; // 新增：宇宙雷暴计时器
 
     public ApostleBoss(Location spawnLocation, OrionBossPlugin plugin) {
         this.spawnLocation = spawnLocation;
@@ -188,6 +195,11 @@ public class ApostleBoss {
         swapTask = new BukkitRunnable() {
             @Override
             public void run() {
+                // 如果正在释放宇宙雷暴，跳过位置交换
+                if (isCastingCosmicStorm) {
+                    return;
+                }
+                
                 if (apostle.isDead() || !apostle.isValid() || playerMirrors.isEmpty()) {
                     cancel();
                     return;
@@ -259,6 +271,8 @@ public class ApostleBoss {
                 // 执行阶段行为
                 if (currentPhase == 1) {
                     phaseOneBehavior();
+                } else if (currentPhase == 2) {
+                    phaseTwoBehavior(); // 新增：二阶段行为
                 }
                 
                 // 检查并补充死亡的镜像
@@ -285,6 +299,31 @@ public class ApostleBoss {
             lastPotionRain = currentTime;
         } else {
             // 普通弓箭攻击
+            shootArrow(target);
+        }
+    }
+    
+    // 新增：二阶段行为
+    private void phaseTwoBehavior() {
+        Player target = findNearestPlayer();
+        if (target == null) return;
+        
+        long currentTime = System.currentTimeMillis();
+        
+        // 二阶段技能：宇宙雷暴
+        if (currentTime - lastCosmicStorm > COSMIC_STORM_COOLDOWN && random.nextDouble() < 0.2) {
+            useCosmicStorm(target);
+            lastCosmicStorm = currentTime;
+        }
+        // 二阶段也可以使用一阶段的技能
+        else if (currentTime - lastFlameAttack > FLAME_COOLDOWN && random.nextDouble() < 0.25) {
+            useFlameAttack(target);
+            lastFlameAttack = currentTime;
+        } else if (currentTime - lastPotionRain > POTION_RAIN_COOLDOWN && random.nextDouble() < 0.15) {
+            usePotionRain(target);
+            lastPotionRain = currentTime;
+        } else {
+            // 普通攻击
             shootArrow(target);
         }
     }
@@ -396,6 +435,202 @@ public class ApostleBoss {
 
         apostle.getWorld().playSound(apostle.getLocation(), Sound.ENTITY_WITCH_THROW, 1.0f, 1.0f);
         target.sendMessage("§cApostle summons a rain of harming potions!");
+    }
+    
+    // 新增：宇宙雷暴技能
+    private void useCosmicStorm(Player target) {
+        if (isCastingCosmicStorm) return;
+        
+        isCastingCosmicStorm = true;
+        cosmicStormTicks = 0;
+        
+        // 广播消息
+        Bukkit.broadcastMessage("§4§lApostle unleashes COSMIC STORM!");
+        Bukkit.broadcastMessage("§cBeware of continuous lightning and crystal explosions!");
+        
+        // 对所有附近玩家显示警告
+        for (Player player : getNearbyPlayers(50)) {
+            player.sendTitle("§4§lCOSMIC STORM", "§cContinuous lightning for 15 seconds!", 10, 40, 10);
+            player.playSound(player.getLocation(), Sound.ENTITY_WARDEN_ROAR, 2.0f, 0.7f);
+        }
+        
+        // 技能特效：使徒周围特效
+        Location apostleLoc = apostle.getLocation();
+        apostleLoc.getWorld().playSound(apostleLoc, Sound.ENTITY_WITHER_SPAWN, 2.0f, 0.8f);
+        apostleLoc.getWorld().spawnParticle(Particle.PORTAL, apostleLoc, 50, 2, 2, 2);
+        
+        // 使徒免疫伤害并浮空（技能期间无敌）
+        apostle.setInvulnerable(true);
+        apostle.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 20 * 15, 0, false, false)); // 15秒浮空
+        
+        // 开始宇宙雷暴任务
+        cosmicStormTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (cosmicStormTicks >= 20 * 15 || apostle.isDead() || !apostle.isValid()) {
+                    // 技能结束
+                    endCosmicStorm();
+                    cancel();
+                    return;
+                }
+                
+                // 3倍频率：每3ticks执行一次攻击（原来是每10ticks一次）
+                if (cosmicStormTicks % 3 == 0) {
+                    performCosmicStormAttack();
+                }
+                
+                // 每2秒广播一次警告
+                if (cosmicStormTicks % 40 == 0) {
+                    Bukkit.broadcastMessage("§4§lCOSMIC STORM continues! Take cover!");
+                }
+                
+                cosmicStormTicks++;
+            }
+        };
+        
+        cosmicStormTask.runTaskTimer(plugin, 0L, 1L);
+    }
+   // 宇宙雷暴单次攻击
+private void performCosmicStormAttack() {
+    Location center = apostle.getLocation();
+    World world = center.getWorld();
+    
+    // 3倍密度：每次攻击生成9-15个闪电爆炸点（原来是3-5个）
+    int attacks = 9 + random.nextInt(7); // 9-15个攻击点
+    
+    for (int attackIndex = 0; attackIndex < attacks; attackIndex++) {
+        // 在使徒周围圆面内均匀分布（不是只在圆周上）
+        // 使用 reject sampling 确保在整个圆面均匀分布
+        double x, z;
+        
+        // 通过随机选择正方形内的点，并检查是否在圆内
+        do {
+            x = (random.nextDouble() * 2 - 1) * 30; // -30 到 30
+            z = (random.nextDouble() * 2 - 1) * 30; // -30 到 30
+        } while (x * x + z * z > 30 * 30); // 确保在半径30的圆内
+        
+        // 计算最终位置
+        double finalX = center.getX() + x;
+        double finalZ = center.getZ() + z;
+        
+        // 找到地面高度
+        Location targetLoc = new Location(world, finalX, center.getY(), finalZ);
+        double groundY = world.getHighestBlockYAt(targetLoc) + 1;
+        
+        // 确保Y坐标在合理范围内
+        double adjustedY = groundY;
+        if (adjustedY < center.getY() - 5) {
+            adjustedY = center.getY() - 5;
+        } else if (adjustedY > center.getY() + 20) {
+            adjustedY = center.getY() + 20;
+        }
+        
+        final Location finalTargetLoc = new Location(world, finalX, adjustedY, finalZ);
+        
+        // 第一阶段：闪电打击
+        world.strikeLightning(finalTargetLoc);
+        
+        // 闪电特效
+        world.playSound(finalTargetLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.2f, 0.9f);
+        world.spawnParticle(Particle.FLASH, finalTargetLoc, 3, 0.5, 0.5, 0.5);
+        
+        // 第二阶段：0.3秒后生成水晶并爆炸
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // 生成1-2个末影水晶
+                int crystalCount = 1 + random.nextInt(2);
+                for (int crystalIndex = 0; crystalIndex < crystalCount; crystalIndex++) {
+                    // 在水晶位置周围随机偏移
+                    double offsetX = (random.nextDouble() - 0.5) * 3;
+                    double offsetZ = (random.nextDouble() - 0.5) * 3;
+                    
+                    Location crystalLoc = finalTargetLoc.clone().add(offsetX, 1, offsetZ);
+                    
+                    // 确保水晶位置合理
+                    crystalLoc.setY(world.getHighestBlockYAt(crystalLoc) + 1);
+                    
+                    EnderCrystal crystal = world.spawn(crystalLoc, EnderCrystal.class);
+                    crystal.setShowingBottom(false);
+                    
+                    // 水晶生成特效
+                    world.playSound(crystalLoc, Sound.ENTITY_ENDER_DRAGON_FLAP, 0.8f, 1.2f);
+                    world.spawnParticle(Particle.PORTAL, crystalLoc, 8, 0.4, 0.4, 0.4);
+                    
+                    // 0.3秒后水晶爆炸
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            // 爆炸伤害（水晶伤害）- 威力略微降低以平衡性能
+                            world.createExplosion(crystalLoc, 5.5f, true, true, apostle);
+                            crystal.remove();
+                            
+                            // 爆炸特效
+                            world.playSound(crystalLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.8f, 0.8f);
+                            world.spawnParticle(Particle.EXPLOSION, crystalLoc, 1);
+                            world.spawnParticle(Particle.FLAME, crystalLoc, 15, 1, 1, 1);
+                        }
+                    }.runTaskLater(plugin, 6L); // 0.3秒后
+                }
+            }
+        }.runTaskLater(plugin, 6L); // 0.3秒后
+        
+        // 在闪电位置周围添加一些随机电火花
+        for (int sparkIndex = 0; sparkIndex < 3; sparkIndex++) {
+            Location sparkLoc = finalTargetLoc.clone().add(
+                (random.nextDouble() - 0.5) * 5,
+                random.nextDouble() * 2,
+                (random.nextDouble() - 0.5) * 5
+            );
+            world.spawnParticle(Particle.ELECTRIC_SPARK, sparkLoc, 2, 0.2, 0.2, 0.2);
+        }
+    }
+    
+    // 使徒周围的持续特效
+    world.spawnParticle(Particle.CLOUD, center, 5, 1, 1, 1);
+    world.spawnParticle(Particle.ELECTRIC_SPARK, center, 8, 0.8, 0.8, 0.8);
+} 
+    // 宇宙雷暴单次攻击
+   // 宇宙雷暴单次攻击
+    // 结束宇宙雷暴技能
+    private void endCosmicStorm() {
+        isCastingCosmicStorm = false;
+        cosmicStormTicks = 0;
+        
+        // 移除使徒的无敌状态
+        apostle.setInvulnerable(false);
+        apostle.removePotionEffect(PotionEffectType.LEVITATION);
+        
+        // 广播结束消息
+        Bukkit.broadcastMessage("§aCosmic Storm has ended!");
+        
+        // 结束特效
+        Location apostleLoc = apostle.getLocation();
+        apostleLoc.getWorld().playSound(apostleLoc, Sound.ENTITY_WITHER_DEATH, 1.0f, 1.0f);
+        apostleLoc.getWorld().spawnParticle(Particle.CLOUD, apostleLoc, 50, 2, 2, 2);
+        
+        // 使徒缓慢降落
+        new BukkitRunnable() {
+            private int ticks = 0;
+            
+            @Override
+            public void run() {
+                if (ticks >= 20 || apostle.isDead() || !apostle.isValid()) {
+                    cancel();
+                    return;
+                }
+                
+                // 缓慢下降
+                Location currentLoc = apostle.getLocation();
+                if (currentLoc.getBlock().getRelative(0, -1, 0).getType() != Material.AIR) {
+                    cancel();
+                    return;
+                }
+                
+                apostle.teleport(currentLoc.clone().subtract(0, 0.1, 0));
+                ticks++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L);
     }
 
     private void shootArrow(Player target) {
@@ -511,6 +746,10 @@ public class ApostleBoss {
 
         if (swapTask != null) {
             swapTask.cancel();
+        }
+        
+        if (cosmicStormTask != null) {
+            cosmicStormTask.cancel();
         }
 
         if (bossBar != null) {
