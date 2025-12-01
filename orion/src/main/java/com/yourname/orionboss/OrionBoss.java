@@ -78,7 +78,7 @@ private long lastExecutionAttack = 0;
         behaviorTask.runTaskTimer(plugin, 0L, 20L); // Run every second
     }
 
-private void performRandomAttack() {
+    private void performRandomAttack() {
     Player target = findNearestPlayer();
     if (target == null) return;
 
@@ -498,15 +498,15 @@ private void performRandomAttack() {
 private void useExecutionAttack(Player target) {
     lastExecutionAttack = System.currentTimeMillis();
     
-    Bukkit.broadcastMessage("§4§lORION UNLEASHES EXECUTION! §c§lDRAGONS FROM ABYSS!");
+    Bukkit.broadcastMessage("§4§lORION UNLEASHES EXECUTION! §c§lMASSIVE FIREBALLS INCOMING!");
     
     Location bossLoc = boss.getLocation();
     
-    // 第一阶段：立即召唤2条龙（上方和下方各1条）
-    summonExecutionDragon(target, bossLoc.clone().add(0, 10, 0), 0.8f); // 上方龙
-    summonExecutionDragon(target, bossLoc.clone().subtract(0, 5, 0), 0.8f); // 下方龙
+    // 第一阶段：立即发射2个巨型火焰弹
+    summonExecutionFireball(target, bossLoc.clone().add(5, 5, 0), 1.0f); // 右侧火焰弹
+    summonExecutionFireball(target, bossLoc.clone().add(-5, 5, 0), 1.0f); // 左侧火焰弹
     
-    // 第二阶段：1秒后召唤1条加速龙
+    // 第二阶段：1秒后发射1个加速火焰弹
     new BukkitRunnable() {
         @Override
         public void run() {
@@ -515,17 +515,29 @@ private void useExecutionAttack(Player target) {
                 Player currentTarget = findNearestPlayer();
                 if (currentTarget != null) {
                     Location newBossLoc = boss.getLocation();
-                    summonExecutionDragon(currentTarget, newBossLoc.clone().add(0, 15, 0), 1.6f); // 速度翻倍
+                    summonExecutionFireball(currentTarget, newBossLoc.clone().add(0, 8, 0), 2.0f); // 速度翻倍
                 }
             }
         }
     }.runTaskLater(plugin, 20L); // 1秒后
     
     // 技能特效
-    boss.getWorld().playSound(bossLoc, org.bukkit.Sound.ENTITY_ENDER_DRAGON_DEATH, 3.0f, 0.7f);
+    boss.getWorld().playSound(bossLoc, org.bukkit.Sound.ENTITY_ENDER_DRAGON_SHOOT, 3.0f, 0.7f);
     boss.getWorld().spawnParticle(org.bukkit.Particle.DRAGON_BREATH, bossLoc, 100, 5, 5, 5);
+    boss.getWorld().spawnParticle(org.bukkit.Particle.FLAME, bossLoc, 50, 3, 3, 3);
     
-    target.sendTitle("§4§lEXECUTION", "§cDragons are coming!", 10, 40, 10);
+    target.sendTitle("§4§lEXECUTION", "§cMassive fireballs incoming!", 10, 40, 10);
+}
+
+private void summonExecutionFireball(Player target, Location spawnLocation, float speed) {
+    ExecutionFireball executionFireball = new ExecutionFireball(plugin, target, speed, 40.0);
+    executionFireball.spawn(spawnLocation);
+    
+    // 生成时的局部特效
+    spawnLocation.getWorld().playSound(spawnLocation, 
+        org.bukkit.Sound.ENTITY_BLAZE_SHOOT, 2.0f, 0.6f);
+    spawnLocation.getWorld().spawnParticle(org.bukkit.Particle.LAVA, 
+        spawnLocation, 20, 1, 1, 1);
 }
 
 private void summonExecutionDragon(Player target, Location spawnLocation, float speed) {
