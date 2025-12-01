@@ -1,13 +1,15 @@
 package com.yourname.orionboss;
 
-
-import java.util.Objects;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
 
+import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 public class EntityUtils {
@@ -31,8 +33,31 @@ public class EntityUtils {
         clone.getEquipment().setLeggings(original.getInventory().getLeggings());
         clone.getEquipment().setBoots(original.getInventory().getBoots());
         clone.getEquipment().setItemInMainHand(original.getInventory().getItemInMainHand());
+        clone.getEquipment().setItemInOffHand(original.getInventory().getItemInOffHand());
+        
+        // 复制装备附魔
+        copyEquipmentEnchantments(original, clone);
         
         return clone;
+    }
+    
+    // 复制装备附魔
+    private static void copyEquipmentEnchantments(Player original, Husk clone) {
+        // 复制主手物品的附魔
+        ItemStack mainHand = original.getInventory().getItemInMainHand();
+        if (mainHand != null && mainHand.hasItemMeta()) {
+            ItemMeta meta = mainHand.getItemMeta();
+            if (meta.hasEnchants()) {
+                ItemStack cloneWeapon = clone.getEquipment().getItemInMainHand();
+                if (cloneWeapon != null) {
+                    ItemMeta cloneMeta = cloneWeapon.getItemMeta();
+                    for (Map.Entry<Enchantment, Integer> enchant : meta.getEnchants().entrySet()) {
+                        cloneMeta.addEnchant(enchant.getKey(), enchant.getValue(), true);
+                    }
+                    cloneWeapon.setItemMeta(cloneMeta);
+                }
+            }
+        }
     }
     
     // 生成增强玩家镜像
@@ -52,6 +77,10 @@ public class EntityUtils {
         clone.getEquipment().setLeggings(original.getInventory().getLeggings());
         clone.getEquipment().setBoots(original.getInventory().getBoots());
         clone.getEquipment().setItemInMainHand(original.getInventory().getItemInMainHand());
+        clone.getEquipment().setItemInOffHand(original.getInventory().getItemInOffHand());
+        
+        // 复制装备附魔
+        copyEquipmentEnchantments(original, clone);
         
         return clone;
     }

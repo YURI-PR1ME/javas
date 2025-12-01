@@ -10,6 +10,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.Material;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -79,9 +82,9 @@ public class ApostleBoss {
         apostle.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, Integer.MAX_VALUE, 1, false, false));
         apostle.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, 1, false, false));
         
-        // 给使徒装备钻石装备
-        EntityUtils.equipDiamondArmor(apostle);
-
+        // 复制最近玩家的装备
+        copyNearestPlayerEquipment();
+        
         // 召唤镜像
         summonMirrors();
         
@@ -90,6 +93,40 @@ public class ApostleBoss {
 
         // 更新BossBar
         updateBossBar();
+    }
+
+    private void copyNearestPlayerEquipment() {
+        Player nearestPlayer = findNearestPlayer();
+        if (nearestPlayer != null) {
+            // 复制玩家装备
+            apostle.getEquipment().setHelmet(nearestPlayer.getInventory().getHelmet());
+            apostle.getEquipment().setChestplate(nearestPlayer.getInventory().getChestplate());
+            apostle.getEquipment().setLeggings(nearestPlayer.getInventory().getLeggings());
+            apostle.getEquipment().setBoots(nearestPlayer.getInventory().getBoots());
+            apostle.getEquipment().setItemInMainHand(nearestPlayer.getInventory().getItemInMainHand());
+            apostle.getEquipment().setItemInOffHand(nearestPlayer.getInventory().getItemInOffHand());
+            
+            // 复制装备的附魔和耐久
+            copyEquipmentEnchantments(nearestPlayer);
+        }
+    }
+    
+    private void copyEquipmentEnchantments(Player player) {
+        // 复制主手物品的附魔
+        ItemStack mainHand = player.getInventory().getItemInMainHand();
+        if (mainHand != null && mainHand.hasItemMeta()) {
+            ItemMeta meta = mainHand.getItemMeta();
+            if (meta.hasEnchants()) {
+                ItemStack apostleWeapon = apostle.getEquipment().getItemInMainHand();
+                if (apostleWeapon != null) {
+                    ItemMeta apostleMeta = apostleWeapon.getItemMeta();
+                    for (Map.Entry<Enchantment, Integer> enchant : meta.getEnchants().entrySet()) {
+                        apostleMeta.addEnchant(enchant.getKey(), enchant.getValue(), true);
+                    }
+                    apostleWeapon.setItemMeta(apostleMeta);
+                }
+            }
+        }
     }
 
     private void summonMirrors() {
@@ -109,13 +146,42 @@ public class ApostleBoss {
     private void spawnMirror(Player player) {
         // 使用EntityUtils生成镜像
         Location spawnLoc = EntityUtils.findSpawnLocationAround(apostle.getLocation(), 10);
-        Husk mirror = EntityUtils.spawnPlayerClone(player, spawnLoc, "", plugin);
+        Husk mirror = EntityUtils.spawnPlayerClone(player, spawnLoc, "§8SHADOW OF ", plugin);
         
         playerMirrors.add(mirror);
+        
+        // 添加爆炸攻击AI
+        addExplosiveAI(mirror);
         
         // 记录玩家镜像数量
         UUID playerId = player.getUniqueId();
         playerMirrorCount.put(playerId, playerMirrorCount.getOrDefault(playerId, 0) + 1);
+    }
+    
+    private void addExplosiveAI(Husk mirror) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (mirror.isDead() || !mirror.isValid()) {
+                    cancel();
+                    return;
+                }
+                
+                Player target = findNearestPlayerTo(mirror.getLocation());
+                if (target != null && target.getLocation().distance(mirror.getLocation()) < 3) {
+                    // 创建爆炸
+                    Location explosionLoc = mirror.getLocation();
+                    explosionLoc.getWorld().createExplosion(explosionLoc, 4.0f, true, true, mirror);
+                    target.damage(20.0, mirror);
+                    mirror.remove();
+                    cancel();
+                    
+                    // 爆炸特效
+                    explosionLoc.getWorld().playSound(explosionLoc, Sound.ENTITY_GENERIC_EXPLODE, 2.0f, 1.0f);
+                    explosionLoc.getWorld().spawnParticle(Particle.EXPLOSION, explosionLoc, 10, 1, 1, 1);
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
     }
 
     private void startSwapTask() {
@@ -354,7 +420,7 @@ public class ApostleBoss {
                 // 找到对应的玩家（通过名字匹配）
                 String playerName = mirror.getCustomName();
                 if (playerName != null) {
-                    Player player = plugin.getServer().getPlayerExact(playerName);
+                    Player player = plugin.getServer().getPlayerExact(playerName.replace("§8SHADOW OF ", ""));
                     if (player != null && player.isOnline() && player.getGameMode() == GameMode.SURVIVAL) {
                         // 1秒后补充镜像
                         new BukkitRunnable() {
@@ -376,7 +442,7 @@ public class ApostleBoss {
     private int countMirrorsForPlayer(Player player) {
         int count = 0;
         for (Husk mirror : playerMirrors) {
-            if (mirror.getCustomName() != null && mirror.getCustomName().equals(player.getName())) {
+            if (mirror.getCustomName() != null && mirror.getCustomName().equals("§8SHADOW OF " + player.getName())) {
                 count++;
             }
         }
@@ -391,6 +457,23 @@ public class ApostleBoss {
             if (EntityUtils.isValidTarget(player)) {
                 double distance = player.getLocation().distance(apostle.getLocation());
                 if (distance < nearestDistance && distance <= 50) {
+                    nearest = player;
+                    nearestDistance = distance;
+                }
+            }
+        }
+
+        return nearest;
+    }
+    
+    private Player findNearestPlayerTo(Location location) {
+        Player nearest = null;
+        double nearestDistance = Double.MAX_VALUE;
+
+        for (Player player : location.getWorld().getPlayers()) {
+            if (EntityUtils.isValidTarget(player)) {
+                double distance = player.getLocation().distance(location);
+                if (distance < nearestDistance) {
                     nearest = player;
                     nearestDistance = distance;
                 }
