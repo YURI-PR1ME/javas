@@ -538,37 +538,37 @@ private void launchTrackingWitherSkull(Vector direction, boolean isCharged) {
         }.runTaskTimer(plugin, 0L, 40L); // Check every 2 seconds
     }
 
-    private void useUltimateAttack(Player target) {
-        lastUltimateAttack = System.currentTimeMillis();
-        
-        Bukkit.broadcastMessage("§4§lORION UNLEASHES HIS ULTIMATE POWER!");
-        Bukkit.broadcastMessage("§6§lTHE VOID'S EMBRACE!");
-        
-        Location center = target.getLocation();
-        
-        // Phase 1: Replace air with lava in 4 block radius
-        replaceAirWithLava(center, 4);
-        
-        // Phase 2: 发射20个追踪凋零头（新增）
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                launchMultipleTrackingSkulls(20);
-            }
-        }.runTaskLater(plugin, 40L); // 2秒后发射
-        
-        // Phase 3: After 3 seconds, replace lava with end crystals and explode
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                replaceLavaWithCrystals(center, 4);
-                
-                // Phase 4: Lightning strikes
-                strikeLightningAround(center, 4);
-            }
-        }.runTaskLater(plugin, 60L); // 3秒后
-    }
-
+private void useUltimateAttack(Player target) {
+    lastUltimateAttack = System.currentTimeMillis();
+    
+    Bukkit.broadcastMessage("§4§lORION UNLEASHES HIS ULTIMATE POWER!");
+    Bukkit.broadcastMessage("§6§lTHE VOID'S EMBRACE!");
+    
+    Location center = target.getLocation();
+    
+    // Phase 1: Replace air with lava in 4 block radius
+    replaceAirWithLava(center, 4);
+    
+    // Phase 2: 发射20个追踪凋零头（已修复，从周围随机位置发射）
+    new BukkitRunnable() {
+        @Override
+        public void run() {
+            launchMultipleTrackingSkulls(20);
+        }
+    }.runTaskLater(plugin, 40L); // 2秒后发射
+    
+    // Phase 3: After 3 seconds, replace lava with end crystals and explode
+    new BukkitRunnable() {
+        @Override
+        public void run() {
+            replaceLavaWithCrystals(center, 4);
+            
+            // Phase 4: Lightning strikes
+            strikeLightningAround(center, 4);
+        }
+    }.runTaskLater(plugin, 60L); // 3秒后
+}
+// 新增方法：发射多个追踪凋零头（修复版）
 // 新增方法：发射多个追踪凋零头（修复版）
 private void launchMultipleTrackingSkulls(int count) {
     Bukkit.broadcastMessage("§4§lORION UNLEASHES TRACKING WITHER SKULLS!");
@@ -611,36 +611,84 @@ private void launchMultipleTrackingSkulls(int count) {
                     return;
                 }
                 
-                // 计算发射方向（带一些随机散布）
+                // 计算Boss周围的随机发射位置（半径3-8格）
+                double angle = Math.random() * 2 * Math.PI;
+                double radius = 3 + Math.random() * 5; // 3-8格半径
+                double heightOffset = 1 + Math.random() * 3; // 1-4格高度偏移
+                
+                // 计算相对于Boss的随机位置
+                Location spawnLocation = bossLocation.clone().add(
+                    Math.cos(angle) * radius,
+                    heightOffset,
+                    Math.sin(angle) * radius
+                );
+                
+                // 确保生成位置是安全的（不是方块内部）
+                while (spawnLocation.getBlock().getType() != Material.AIR && 
+                       spawnLocation.getBlock().getType() != Material.CAVE_AIR) {
+                    spawnLocation.add(0, 1, 0);
+                    if (spawnLocation.getY() - bossLocation.getY() > 10) {
+                        // 如果太高，回到Boss位置附近
+                        spawnLocation = bossLocation.clone().add(
+                            Math.cos(angle) * radius,
+                            heightOffset,
+                            Math.sin(angle) * radius
+                        );
+                        break;
+                    }
+                }
+                
+                // 计算发射方向（指向目标玩家，但稍微随机化）
                 Vector baseDirection = targetPlayer.getLocation()
                     .add(0, 1, 0)
-                    .subtract(bossLocation)
+                    .subtract(spawnLocation)
                     .toVector()
                     .normalize();
                 
-                // 添加随机散布
-                double spread = 0.3;
+                // 添加随机散布，使每个头颅的路径都不同
+                double spread = 0.4;
                 Vector spreadVector = new Vector(
                     (Math.random() - 0.5) * spread,
-                    (Math.random() - 0.5) * spread * 0.5,
+                    (Math.random() - 0.5) * spread * 0.3,
                     (Math.random() - 0.5) * spread
                 );
                 
                 Vector finalDirection = baseDirection.add(spreadVector).normalize();
                 
-                // 发射追踪头颅
-                launchTrackingWitherSkull(finalDirection, skullIndex % 3 == 0); // 每3个有一个是充能的
+                try {
+                    // 直接从计算出的位置生成追踪头颅
+                    WitherSkull skull = boss.getWorld().spawn(spawnLocation, WitherSkull.class);
+                    
+                    skull.setDirection(finalDirection);
+                    skull.setCharged(skullIndex % 3 == 0); // 每3个有一个是充能的
+                    skull.setShooter(boss);
+                    skull.setVelocity(finalDirection.multiply(1.2 + Math.random() * 0.3));
+                    
+                    // 添加追踪器
+                    addSkullTracker(skull);
+                    
+                    // 添加特效区分追踪头颅
+                    if (skullIndex % 3 == 0) {
+                        boss.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, 
+                            spawnLocation, 3, 0.2, 0.2, 0.2);
+                    } else {
+                        boss.getWorld().spawnParticle(Particle.CLOUD, 
+                            spawnLocation, 2, 0.1, 0.1, 0.1);
+                    }
+                    
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Failed to launch tracking wither skull: " + e.getMessage());
+                }
             }
         }.runTaskLater(plugin, delay);
     }
     
     // 给所有玩家警告
     for (Player player : getNearbyPlayers(100)) {
-        player.sendTitle("§4§lTRACKING SKULLS", "§c20 skulls are chasing you!", 10, 60, 10);
-        player.sendMessage("§4§lWARNING: Orion has launched 20 tracking wither skulls!");
+        player.sendTitle("§4§lTRACKING SKULLS", "§c" + count + " skulls are chasing you!", 10, 60, 10);
+        player.sendMessage("§4§lWARNING: Orion has launched " + count + " tracking wither skulls!");
     }
-}    // 新增方法：发射多个追踪凋零头
-
+}
     private void replaceAirWithLava(Location center, int radius) {
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
