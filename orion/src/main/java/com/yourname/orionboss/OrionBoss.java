@@ -495,6 +495,7 @@ private void performRandomAttack() {
         
         center.getWorld().playSound(center, Sound.BLOCK_LAVA_AMBIENT, 2.0f, 0.8f);
     }
+
 private void useExecutionAttack(Player target) {
     lastExecutionAttack = System.currentTimeMillis();
     
@@ -502,34 +503,24 @@ private void useExecutionAttack(Player target) {
     
     Location bossLoc = boss.getLocation();
     
-    // 第一阶段：立即召唤2条龙（上方和下方各1条）
-    summonExecutionDragon(target, bossLoc.clone().add(0, 10, 0), 0.8f); // 上方龙
-    summonExecutionDragon(target, bossLoc.clone().subtract(0, 5, 0), 0.8f); // 下方龙
-    
-    // 第二阶段：1秒后召唤1条加速龙
-    new BukkitRunnable() {
-        @Override
-        public void run() {
-            if (!boss.isDead() && boss.isValid()) {
-                // 重新计算目标位置，因为玩家可能已经移动
-                Player currentTarget = findNearestPlayer();
-                if (currentTarget != null) {
-                    Location newBossLoc = boss.getLocation();
-                    summonExecutionDragon(currentTarget, newBossLoc.clone().add(0, 15, 0), 1.6f); // 速度翻倍
-                }
-            }
-        }
-    }.runTaskLater(plugin, 20L); // 1秒后
+    // 召唤3条龙从不同方向攻击
+    summonExecutionDragon(target, bossLoc.clone().add(10, 8, 0)); // 右侧
+    summonExecutionDragon(target, bossLoc.clone().add(-10, 8, 0)); // 左侧
+    summonExecutionDragon(target, bossLoc.clone().add(0, 12, 10)); // 前方
     
     // 技能特效
     boss.getWorld().playSound(bossLoc, org.bukkit.Sound.ENTITY_ENDER_DRAGON_DEATH, 3.0f, 0.7f);
     boss.getWorld().spawnParticle(org.bukkit.Particle.DRAGON_BREATH, bossLoc, 100, 5, 5, 5);
     
-    target.sendTitle("§4§lEXECUTION", "§cDragons are coming!", 10, 40, 10);
+    // 对所有附近玩家显示标题
+    for (Player player : getNearbyPlayers(50)) {
+        player.sendTitle("§4§lEXECUTION", "§cDragons are coming!", 10, 40, 10);
+    }
 }
 
-private void summonExecutionDragon(Player target, Location spawnLocation, float speed) {
-    ExecutionDragon executionDragon = new ExecutionDragon(plugin, target, speed, 40.0);
+private void summonExecutionDragon(Player target, Location spawnLocation) {
+    // 修复：只传递3个参数，移除速度参数
+    ExecutionDragon executionDragon = new ExecutionDragon(plugin, target, 40.0);
     executionDragon.spawn(spawnLocation);
     
     // 生成时的局部特效
@@ -537,6 +528,8 @@ private void summonExecutionDragon(Player target, Location spawnLocation, float 
         org.bukkit.Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 0.8f);
     spawnLocation.getWorld().spawnParticle(org.bukkit.Particle.PORTAL, 
         spawnLocation, 30, 2, 2, 2);
+    spawnLocation.getWorld().spawnParticle(org.bukkit.Particle.FLAME, 
+        spawnLocation, 20, 1, 1, 1);
 }
 private void replaceLavaWithCrystals(Location center, int radius) {
         List<EnderCrystal> crystals = new ArrayList<>();
