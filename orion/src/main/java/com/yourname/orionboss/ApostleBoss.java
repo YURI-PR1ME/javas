@@ -212,7 +212,7 @@ public class ApostleBoss {
                 }
             }
         };
-        swapTask.runTaskTimer(plugin, 140L, 140L); // 7秒（20 ticks * 7）
+        swapTask.runTaskTimer(plugin, 20L, 20L); // 1秒（20 ticks * 1）
     }
 
     private void createBossBar() {
