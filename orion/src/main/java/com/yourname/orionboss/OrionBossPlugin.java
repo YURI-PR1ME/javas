@@ -6,9 +6,6 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.Material;
-// 如果使用了 Item 类，可能实际需要 Material
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.*;
 import org.bukkit.boss.BossBar;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -29,6 +26,9 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
     private FileConfiguration treasureConfig;
     private File treasureFile;
     private TreasureManager treasureManager;
+    
+    // 使徒相关字段
+    private ApostleBoss activeApostle = null;
 
     @Override
     public void onEnable() {
@@ -50,6 +50,13 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         }
         activeBosses.clear();
         bossBars.clear();
+        
+        // 清理使徒
+        if (activeApostle != null) {
+            activeApostle.cleanup();
+            activeApostle = null;
+        }
+        
         getLogger().info("OrionBossPlugin has been disabled!");
     }
 
@@ -91,7 +98,7 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
 
             Player player = (Player) sender;
             
-            if (player.getWorld().getEnvironment() != World.Environment.THE_END) {
+            if (player.getWorld().getEnvironment() != org.bukkit.World.Environment.THE_END) {
                 player.sendMessage("§cOrion can only be summoned in The End!");
                 return true;
             }
@@ -206,8 +213,49 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         orionBoss.startBossBehavior();
         
         // Broadcast message
-        Bukkit.broadcastMessage("§6§lORION §e§lTHE HUNTER §6§lhas been summoned in The End!");
-        Bukkit.broadcastMessage("§cPrepare for an epic battle!");
+        org.bukkit.Bukkit.broadcastMessage("§6§lORION §e§lTHE HUNTER §6§lhas been summoned in The End!");
+        org.bukkit.Bukkit.broadcastMessage("§cPrepare for an epic battle!");
+    }
+
+    // 使徒相关方法
+    public void summonApostle(Location location) {
+        if (activeApostle != null) {
+            activeApostle.cleanup();
+        }
+        
+        activeApostle = new ApostleBoss(location, this);
+        activeApostle.startFight();
+        
+        // 注册使徒监听器
+        getServer().getPluginManager().registerEvents(new ApostleListener(this), this);
+    }
+
+    public void onApostleDeath() {
+        if (activeApostle != null) {
+            activeApostle.cleanup();
+            activeApostle = null;
+        }
+        
+        // 恢复Orion战斗
+        for (OrionBoss orionBoss : activeBosses.values()) {
+            orionBoss.returnFromRetreat();
+        }
+        
+        // 广播消息
+        org.bukkit.Bukkit.broadcastMessage("§6§lThe Apostle falls! Orion returns to finish the battle!");
+    }
+
+    // BossBar显示/隐藏方法
+    public void hideBossBarFromAllPlayers() {
+        for (BossBar bossBar : bossBars.values()) {
+            bossBar.setVisible(false);
+        }
+    }
+
+    public void showBossBarToAllPlayers() {
+        for (BossBar bossBar : bossBars.values()) {
+            bossBar.setVisible(true);
+        }
     }
 
     private void setupBossAttributes(Wither boss) {
@@ -219,13 +267,7 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         Objects.requireNonNull(boss.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH)).setBaseValue(500.0);
         boss.setHealth(500.0);
         
-        // Equip netherite armor with Protection IV
-        equipNetheriteArmor(boss);
-    }
-
-    private void equipNetheriteArmor(Wither boss) {
-        // Wither doesn't have equipment, so we'll handle this differently
-        // We'll add protection effects instead
+        // 添加保护效果
         boss.addPotionEffect(new org.bukkit.potion.PotionEffect(
             org.bukkit.potion.PotionEffectType.RESISTANCE, 
             Integer.MAX_VALUE, 
@@ -239,7 +281,7 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         // 确保移除旧的BossBar
         removeBossBar(boss.getUniqueId());
         
-        BossBar bossBar = Bukkit.createBossBar(
+        BossBar bossBar = org.bukkit.Bukkit.createBossBar(
             "§6§l猎户座 ORION §7- §c❤ " + (int)boss.getHealth() + "/" + (int)boss.getMaxHealth(),
             org.bukkit.boss.BarColor.PURPLE,
             org.bukkit.boss.BarStyle.SEGMENTED_12
@@ -249,7 +291,7 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         bossBar.setVisible(true);
         
         // 添加所有在线玩家
-        for (Player player : Bukkit.getOnlinePlayers()) {
+        for (Player player : org.bukkit.Bukkit.getOnlinePlayers()) {
             bossBar.addPlayer(player);
         }
         
@@ -298,8 +340,8 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         item.setUnlimitedLifetime(true);
         item.setInvulnerable(true);
         
-        location.getWorld().spawnParticle(Particle.FLAME, location, 50, 1, 1, 1);
-        location.getWorld().playSound(location, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.8f);
+        location.getWorld().spawnParticle(org.bukkit.Particle.FLAME, location, 50, 1, 1, 1);
+        location.getWorld().playSound(location, org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.8f);
     }
 
     public void showBossBarToPlayer(Player player) {
