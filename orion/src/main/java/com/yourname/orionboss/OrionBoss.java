@@ -36,12 +36,15 @@ public class OrionBoss {
     private static final long CRYSTAL_COOLDOWN = 30000;
     private static final long RAIN_COOLDOWN = 35000;
     private static final long ULTIMATE_COOLDOWN = 60000;
-// 在现有的冷却时间常量后添加
-private static final long EXECUTION_COOLDOWN = 45000;
-private long lastExecutionAttack = 0;    
+    private static final long EXECUTION_COOLDOWN = 45000;
+    private long lastExecutionAttack = 0;
+    
     // Track players for void attack
     private final Map<UUID, Location> playerOriginalLocations = new HashMap<>();
     private final Map<UUID, BukkitRunnable> voidTasks = new HashMap<>();
+    
+    // 骷髅头追踪器
+    private final Map<UUID, WitherSkullTracker> activeTrackers = new HashMap<>();
 
     public OrionBoss(Wither boss, OrionBossPlugin plugin) {
         this.boss = boss;
@@ -78,58 +81,59 @@ private long lastExecutionAttack = 0;
         behaviorTask.runTaskTimer(plugin, 0L, 20L); // Run every second
     }
 
-private void performRandomAttack() {
-    Player target = findNearestPlayer();
-    if (target == null) return;
+    private void performRandomAttack() {
+        Player target = findNearestPlayer();
+        if (target == null) return;
 
-    long currentTime = System.currentTimeMillis();
-    List<Runnable> availableAttacks = new ArrayList<>();
+        long currentTime = System.currentTimeMillis();
+        List<Runnable> availableAttacks = new ArrayList<>();
 
-    // 检查血量是否低于50%且Execution技能可用
-    boolean canUseExecution = boss.getHealth() < boss.getMaxHealth() * 0.5;
-    
-    // Check available attacks based on cooldown
-    if (currentTime - lastLavaAttack > LAVA_COOLDOWN) {
-        availableAttacks.add(() -> useLavaAttack(target));
-    }
-    if (currentTime - lastSkullAttack > SKULL_COOLDOWN) {
-        availableAttacks.add(() -> useSkullAttack(target));
-    }
-    if (currentTime - lastCloneAttack > CLONE_COOLDOWN) {
-        availableAttacks.add(() -> useCloneAttack());
-    }
-    if (currentTime - lastVoidAttack > VOID_COOLDOWN) {
-        availableAttacks.add(() -> useVoidAttack(target));
-    }
-    if (currentTime - lastCrystalAttack > CRYSTAL_COOLDOWN) {
-        availableAttacks.add(() -> useCrystalAttack(target));
-    }
-    if (currentTime - lastRainAttack > RAIN_COOLDOWN) {
-        availableAttacks.add(() -> useRainAttack(target));
-    }
-    if (currentTime - lastUltimateAttack > ULTIMATE_COOLDOWN) {
-        availableAttacks.add(() -> useUltimateAttack(target));
-    }
-    // 新增Execution技能检查
-    if (canUseExecution && currentTime - lastExecutionAttack > EXECUTION_COOLDOWN) {
-        availableAttacks.add(() -> useExecutionAttack(target));
-    }
+        // 检查血量是否低于50%且Execution技能可用
+        boolean canUseExecution = boss.getHealth() < boss.getMaxHealth() * 0.5;
+        
+        // Check available attacks based on cooldown
+        if (currentTime - lastLavaAttack > LAVA_COOLDOWN) {
+            availableAttacks.add(() -> useLavaAttack(target));
+        }
+        if (currentTime - lastSkullAttack > SKULL_COOLDOWN) {
+            availableAttacks.add(() -> useSkullAttack(target));
+        }
+        if (currentTime - lastCloneAttack > CLONE_COOLDOWN) {
+            availableAttacks.add(() -> useCloneAttack());
+        }
+        if (currentTime - lastVoidAttack > VOID_COOLDOWN) {
+            availableAttacks.add(() -> useVoidAttack(target));
+        }
+        if (currentTime - lastCrystalAttack > CRYSTAL_COOLDOWN) {
+            availableAttacks.add(() -> useCrystalAttack(target));
+        }
+        if (currentTime - lastRainAttack > RAIN_COOLDOWN) {
+            availableAttacks.add(() -> useRainAttack(target));
+        }
+        if (currentTime - lastUltimateAttack > ULTIMATE_COOLDOWN) {
+            availableAttacks.add(() -> useUltimateAttack(target));
+        }
+        // 新增Execution技能检查
+        if (canUseExecution && currentTime - lastExecutionAttack > EXECUTION_COOLDOWN) {
+            availableAttacks.add(() -> useExecutionAttack(target));
+        }
 
-    if (!availableAttacks.isEmpty()) {
-        // 权重随机攻击 - 基础攻击更频繁
-        int randomIndex = random.nextInt(availableAttacks.size() + 2); // +2 for basic attacks
-        if (randomIndex < availableAttacks.size()) {
-            availableAttacks.get(randomIndex).run();
-        } else {
-            // 基础攻击
-            if (random.nextBoolean()) {
-                useLavaAttack(target);
+        if (!availableAttacks.isEmpty()) {
+            // 权重随机攻击 - 基础攻击更频繁
+            int randomIndex = random.nextInt(availableAttacks.size() + 2); // +2 for basic attacks
+            if (randomIndex < availableAttacks.size()) {
+                availableAttacks.get(randomIndex).run();
             } else {
-                useSkullAttack(target);
+                // 基础攻击
+                if (random.nextBoolean()) {
+                    useLavaAttack(target);
+                } else {
+                    useSkullAttack(target);
+                }
             }
         }
     }
-}
+
     private void useLavaAttack(Player target) {
         lastLavaAttack = System.currentTimeMillis();
         
@@ -153,45 +157,121 @@ private void performRandomAttack() {
         target.sendMessage("§cOrion turned the ground beneath you into lava!");
     }
 
-    private void useSkullAttack(Player target) {
-        lastSkullAttack = System.currentTimeMillis();
+private void useSkullAttack(Player target) {
+    lastSkullAttack = System.currentTimeMillis();
+    
+    // 技能启动特效
+    Location bossLoc = boss.getLocation();
+    boss.getWorld().playSound(bossLoc, Sound.ENTITY_WITHER_AMBIENT, 2.0f, 0.9f);
+    boss.getWorld().spawnParticle(Particle.CLOUD, bossLoc, 20, 2, 2, 2);
+    
+    // 给目标玩家视觉警告
+    if (target != null && target.isOnline()) {
+        target.sendTitle("§4§lSKULL BARRAGE", "§cTracking and regular skulls incoming!", 10, 40, 10);
+        target.spawnParticle(Particle.FLAME, target.getLocation(), 15, 1, 1, 1);
+    }
+    
+    new BukkitRunnable() {
+        private int rounds = 0;
         
-        new BukkitRunnable() {
-            private int rounds = 0;
+        @Override
+        public void run() {
+            if (rounds >= 3 || boss.isDead()) {
+                cancel();
+                return;
+            }
             
-            @Override
-            public void run() {
-                if (rounds >= 3 || boss.isDead()) {
+            // 检查目标是否仍然有效
+            if (target == null || !target.isOnline() || target.isDead()) {
+                Player newTarget = findNearestPlayer();
+                if (newTarget == null) {
                     cancel();
                     return;
                 }
-                
-                // Shoot 3 skulls per round
-                for (int i = 0; i < 3; i++) {
-                    Location eyeLocation = boss.getEyeLocation();
-                    Vector direction = target.getLocation().add(0, 1, 0)
-                            .subtract(eyeLocation).toVector().normalize();
-                    
-                    // Add some spread
-                    direction.add(new Vector(
-                        (random.nextDouble() - 0.5) * 0.3,
-                        (random.nextDouble() - 0.5) * 0.3,
-                        (random.nextDouble() - 0.5) * 0.3
-                    )).normalize();
-                    
-                    WitherSkull skull = boss.launchProjectile(WitherSkull.class);
-                    skull.setDirection(direction);
-                    skull.setCharged(false);
-                }
-                
-                boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_WITHER_SHOOT, 2.0f, 0.8f);
-                rounds++;
+                // 继续使用新目标
             }
-        }.runTaskTimer(plugin, 0L, 20L); // 1 second between rounds
-        
+            
+            // Shoot 3 regular skulls and 3 tracking skulls per round
+            for (int i = 0; i < 3; i++) {
+                // 常规非追踪头颅（保持原有逻辑）
+                Location eyeLocation = boss.getEyeLocation();
+                Vector direction = target.getLocation().add(0, 1, 0)
+                        .subtract(eyeLocation).toVector().normalize();
+                
+                // Add some spread
+                direction.add(new Vector(
+                    (random.nextDouble() - 0.5) * 0.3,
+                    (random.nextDouble() - 0.5) * 0.3,
+                    (random.nextDouble() - 0.5) * 0.3
+                )).normalize();
+                
+                WitherSkull skull = boss.launchProjectile(WitherSkull.class);
+                skull.setDirection(direction);
+                skull.setCharged(false);
+                
+                // 同时发射追踪头颅（仅在目标有效时）
+                if (target != null && target.isOnline() && !target.isDead()) {
+                    launchTrackingWitherSkull(direction.clone(), false);
+                }
+            }
+            
+            boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_WITHER_SHOOT, 2.0f, 0.8f);
+            
+            // 每轮攻击后显示提示信息
+            if (rounds == 0) {
+                Bukkit.broadcastMessage("§4Orion is launching a barrage of wither skulls!");
+                if (target != null && target.isOnline()) {
+                    target.sendMessage("§cBoth regular and tracking skulls are coming at you!");
+                }
+            }
+            
+            rounds++;
+        }
+    }.runTaskTimer(plugin, 0L, 20L); // 1 second between rounds
+    
+    if (target != null && target.isOnline()) {
         target.sendMessage("§4Orion is launching wither skulls at you!");
     }
-
+}
+    // 专用方法：发射追踪凋零头颅（非充能版）
+// 专用方法：发射追踪凋零头颅（非充能版）
+private void launchTrackingWitherSkull(Vector direction, boolean isCharged) {
+    if (boss == null || !boss.isValid() || boss.isDead()) {
+        return;
+    }
+    
+    Location eyeLocation = boss.getEyeLocation();
+    
+    // 添加一些随机散布，使追踪头颅的路径稍微不同
+    direction.add(new Vector(
+        (random.nextDouble() - 0.5) * 0.2,
+        (random.nextDouble() - 0.5) * 0.2,
+        (random.nextDouble() - 0.5) * 0.2
+    )).normalize();
+    
+    try {
+        WitherSkull skull = boss.getWorld().spawn(eyeLocation, WitherSkull.class);
+        
+        skull.setDirection(direction);
+        skull.setCharged(isCharged);
+        skull.setShooter(boss);
+        skull.setVelocity(direction.multiply(1.5));
+        
+        // 添加追踪器
+        addSkullTracker(skull);
+        
+        // 添加特效区分追踪头颅
+        if (isCharged) {
+            boss.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, 
+                eyeLocation, 5, 0.3, 0.3, 0.3);
+        } else {
+            boss.getWorld().spawnParticle(Particle.CLOUD, 
+                eyeLocation, 3, 0.2, 0.2, 0.2);
+        }
+    } catch (Exception e) {
+        plugin.getLogger().warning("Failed to launch tracking wither skull: " + e.getMessage());
+    }
+}
     private void useCloneAttack() {
         lastCloneAttack = System.currentTimeMillis();
         
@@ -469,17 +549,97 @@ private void performRandomAttack() {
         // Phase 1: Replace air with lava in 4 block radius
         replaceAirWithLava(center, 4);
         
-        // Phase 2: After 3 seconds, replace lava with end crystals and explode
+        // Phase 2: 发射20个追踪凋零头（新增）
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                launchMultipleTrackingSkulls(20);
+            }
+        }.runTaskLater(plugin, 40L); // 2秒后发射
+        
+        // Phase 3: After 3 seconds, replace lava with end crystals and explode
         new BukkitRunnable() {
             @Override
             public void run() {
                 replaceLavaWithCrystals(center, 4);
                 
-                // Phase 3: Lightning strikes
+                // Phase 4: Lightning strikes
                 strikeLightningAround(center, 4);
             }
-        }.runTaskLater(plugin, 60L); // 3 seconds
+        }.runTaskLater(plugin, 60L); // 3秒后
     }
+
+// 新增方法：发射多个追踪凋零头（修复版）
+private void launchMultipleTrackingSkulls(int count) {
+    Bukkit.broadcastMessage("§4§lORION UNLEASHES TRACKING WITHER SKULLS!");
+    
+    Location bossLocation = boss.getLocation();
+    List<Player> nearbyPlayers = getNearbyPlayers(50);
+    
+    if (nearbyPlayers.isEmpty()) return;
+    
+    // 播放特效
+    boss.getWorld().playSound(bossLocation, Sound.ENTITY_WITHER_SHOOT, 3.0f, 0.6f);
+    boss.getWorld().spawnParticle(Particle.CLOUD, bossLocation, 100, 3, 3, 3);
+    
+    // 使用正确的调度方式：分批次发射
+    for (int i = 0; i < count; i++) {
+        final int skullIndex = i;
+        
+        // 延迟发射，每5个一组，每组间隔5ticks
+        int delay = (i / 5) * 5 + (i % 5);
+        
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (boss.isDead() || !boss.isValid()) {
+                    cancel();
+                    return;
+                }
+                
+                // 随机选择目标玩家或最近玩家
+                Player targetPlayer;
+                if (nearbyPlayers.size() > 1 && Math.random() > 0.7) {
+                    // 70%概率选择随机玩家
+                    targetPlayer = nearbyPlayers.get(new Random().nextInt(nearbyPlayers.size()));
+                } else {
+                    // 30%概率选择最近玩家
+                    targetPlayer = findNearestPlayer();
+                }
+                
+                if (targetPlayer == null || !targetPlayer.isOnline()) {
+                    return;
+                }
+                
+                // 计算发射方向（带一些随机散布）
+                Vector baseDirection = targetPlayer.getLocation()
+                    .add(0, 1, 0)
+                    .subtract(bossLocation)
+                    .toVector()
+                    .normalize();
+                
+                // 添加随机散布
+                double spread = 0.3;
+                Vector spreadVector = new Vector(
+                    (Math.random() - 0.5) * spread,
+                    (Math.random() - 0.5) * spread * 0.5,
+                    (Math.random() - 0.5) * spread
+                );
+                
+                Vector finalDirection = baseDirection.add(spreadVector).normalize();
+                
+                // 发射追踪头颅
+                launchTrackingWitherSkull(finalDirection, skullIndex % 3 == 0); // 每3个有一个是充能的
+            }
+        }.runTaskLater(plugin, delay);
+    }
+    
+    // 给所有玩家警告
+    for (Player player : getNearbyPlayers(100)) {
+        player.sendTitle("§4§lTRACKING SKULLS", "§c20 skulls are chasing you!", 10, 60, 10);
+        player.sendMessage("§4§lWARNING: Orion has launched 20 tracking wither skulls!");
+    }
+}    // 新增方法：发射多个追踪凋零头
 
     private void replaceAirWithLava(Location center, int radius) {
         for (int x = -radius; x <= radius; x++) {
@@ -496,42 +656,58 @@ private void performRandomAttack() {
         center.getWorld().playSound(center, Sound.BLOCK_LAVA_AMBIENT, 2.0f, 0.8f);
     }
 
-private void useExecutionAttack(Player target) {
-    lastExecutionAttack = System.currentTimeMillis();
-    
-    Bukkit.broadcastMessage("§4§lORION UNLEASHES EXECUTION! §c§lDRAGONS FROM ABYSS!");
-    
-    Location bossLoc = boss.getLocation();
-    
-    // 召唤3条龙从不同方向攻击
-    summonExecutionDragon(target, bossLoc.clone().add(10, 8, 0)); // 右侧
-    summonExecutionDragon(target, bossLoc.clone().add(-10, 8, 0)); // 左侧
-    summonExecutionDragon(target, bossLoc.clone().add(0, 12, 10)); // 前方
-    
-    // 技能特效
-    boss.getWorld().playSound(bossLoc, org.bukkit.Sound.ENTITY_ENDER_DRAGON_DEATH, 3.0f, 0.7f);
-    boss.getWorld().spawnParticle(org.bukkit.Particle.DRAGON_BREATH, bossLoc, 100, 5, 5, 5);
-    
-    // 对所有附近玩家显示标题
-    for (Player player : getNearbyPlayers(50)) {
-        player.sendTitle("§4§lEXECUTION", "§cDragons are coming!", 10, 40, 10);
+    private void useExecutionAttack(Player target) {
+        lastExecutionAttack = System.currentTimeMillis();
+        
+        Bukkit.broadcastMessage("§4§lORION UNLEASHES EXECUTION! §c§lDRAGONS FROM ABYSS!");
+        
+        Location bossLoc = boss.getLocation();
+        
+        // 召唤3条龙从不同方向攻击
+        summonExecutionDragon(target, bossLoc.clone().add(10, 8, 0)); // 右侧
+        summonExecutionDragon(target, bossLoc.clone().add(-10, 8, 0)); // 左侧
+        summonExecutionDragon(target, bossLoc.clone().add(0, 12, 10)); // 前方
+        
+        // 技能特效
+        boss.getWorld().playSound(bossLoc, Sound.ENTITY_ENDER_DRAGON_DEATH, 3.0f, 0.7f);
+        boss.getWorld().spawnParticle(Particle.DRAGON_BREATH, bossLoc, 100, 5, 5, 5);
+        
+        // 对所有附近玩家显示标题
+        for (Player player : getNearbyPlayers(50)) {
+            player.sendTitle("§4§lEXECUTION", "§cDragons are coming!", 10, 40, 10);
+        }
     }
-}
 
-private void summonExecutionDragon(Player target, Location spawnLocation) {
-    // 修复：只传递3个参数，移除速度参数
-    ExecutionDragon executionDragon = new ExecutionDragon(plugin, target, 40.0);
-    executionDragon.spawn(spawnLocation);
-    
-    // 生成时的局部特效
-    spawnLocation.getWorld().playSound(spawnLocation, 
-        org.bukkit.Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 0.8f);
-    spawnLocation.getWorld().spawnParticle(org.bukkit.Particle.PORTAL, 
-        spawnLocation, 30, 2, 2, 2);
-    spawnLocation.getWorld().spawnParticle(org.bukkit.Particle.FLAME, 
-        spawnLocation, 20, 1, 1, 1);
-}
-private void replaceLavaWithCrystals(Location center, int radius) {
+    // 添加头颅追踪器方法
+    private void addSkullTracker(WitherSkull skull) {
+        WitherSkullTracker tracker = new WitherSkullTracker(skull, this);
+        activeTrackers.put(skull.getUniqueId(), tracker);
+        tracker.startTracking();
+    }
+
+    // 移除头颅追踪器方法
+    public void removeSkullTracker(UUID skullId) {
+        WitherSkullTracker tracker = activeTrackers.remove(skullId);
+        if (tracker != null) {
+            tracker.cancel();
+        }
+    }
+
+    private void summonExecutionDragon(Player target, Location spawnLocation) {
+        // 修复：只传递3个参数，移除速度参数
+        ExecutionDragon executionDragon = new ExecutionDragon(plugin, target, 40.0);
+        executionDragon.spawn(spawnLocation);
+        
+        // 生成时的局部特效
+        spawnLocation.getWorld().playSound(spawnLocation, 
+            Sound.ENTITY_ENDER_DRAGON_FLAP, 2.0f, 0.8f);
+        spawnLocation.getWorld().spawnParticle(Particle.PORTAL, 
+            spawnLocation, 30, 2, 2, 2);
+        spawnLocation.getWorld().spawnParticle(Particle.FLAME, 
+            spawnLocation, 20, 1, 1, 1);
+    }
+
+    private void replaceLavaWithCrystals(Location center, int radius) {
         List<EnderCrystal> crystals = new ArrayList<>();
         
         for (int x = -radius; x <= radius; x++) {
@@ -660,9 +836,19 @@ private void replaceLavaWithCrystals(Location center, int radius) {
         }
         voidTasks.clear();
         playerOriginalLocations.clear();
+        
+        // 新增：清理所有追踪头颅
+        for (WitherSkullTracker tracker : activeTrackers.values()) {
+            tracker.cancel();
+        }
+        activeTrackers.clear();
     }
 
     public Wither getBoss() {
         return boss;
+    }
+    
+    public OrionBossPlugin getPlugin() {
+        return plugin;
     }
 }

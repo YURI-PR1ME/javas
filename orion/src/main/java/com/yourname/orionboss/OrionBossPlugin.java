@@ -216,8 +216,8 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         boss.setPersistent(true);
         boss.setRemoveWhenFarAway(false);
         
-        Objects.requireNonNull(boss.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH)).setBaseValue(200.0);
-        boss.setHealth(200.0);
+        Objects.requireNonNull(boss.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH)).setBaseValue(500.0);
+        boss.setHealth(500.0);
         
         // Equip netherite armor with Protection IV
         equipNetheriteArmor(boss);
