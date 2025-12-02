@@ -137,7 +137,6 @@ public class OrionComboManager {
         
         if (healthPercent < 0.5) {
             // 血量<50%：可以执行所有连招
-            availableCombos.addAll(comboMap.getOrDefault("normal", new ArrayList<>()));
             availableCombos.addAll(comboMap.getOrDefault("crucial", new ArrayList<>()));
             availableCombos.addAll(lowHealthComboMap.getOrDefault("special", new ArrayList<>()));
         } else {

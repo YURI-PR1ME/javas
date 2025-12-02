@@ -60,7 +60,7 @@ public class OrionBoss {
         this.boss = boss;
         this.plugin = plugin;
         this.comboManager = new OrionComboManager(plugin);
-    this.tauntManager = new TauntManager(plugin);
+        this.tauntManager = new TauntManager(plugin);
     }
 
     public void startBossBehavior() {
@@ -90,12 +90,54 @@ public class OrionBoss {
                     checkRetreatCondition();
                 }
 
+                // === 新增：检查距离并传送 ===
+                checkDistanceAndTeleport();
+
                 performComboAttack();
                 updateBossEffects();
                 plugin.updateBossBar(boss);
             }
         };
         behaviorTask.runTaskTimer(plugin, 0L, 20L); // Run every second
+    }
+
+    // === 新增：检查距离并传送的方法 ===
+    private void checkDistanceAndTeleport() {
+        // 如果处于撤退状态，不执行传送
+        if (hasRetreated) {
+            return;
+        }
+
+        Player target = findNearestPlayer();
+        if (target == null || !target.isOnline() || target.isDead()) {
+            return;
+        }
+
+        // 检查距离是否大于20格
+        double distance = boss.getLocation().distance(target.getLocation());
+        if (distance > 20.0) {
+            // 传送至目标上方10格位置
+            Location teleportLocation = target.getLocation().clone().add(0, 10, 0);
+            boss.teleport(teleportLocation);
+
+            // 传送特效
+            boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.8f);
+            boss.getWorld().spawnParticle(Particle.PORTAL, boss.getLocation(), 30, 1, 1, 1);
+            
+            // 检查Void Attack是否在冷却中
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastVoidAttack > VOID_COOLDOWN) {
+                // 不在冷却中，释放Void Attack
+                useVoidAttack(target);
+                lastVoidAttack = currentTime;
+                
+                // 广播消息
+                Bukkit.broadcastMessage("§4§lOrion teleports and unleashes Void Attack!");
+            } else {
+                // 在冷却中，只传送不释放技能
+                Bukkit.broadcastMessage("§4§lOrion teleports to close the distance!");
+            }
+        }
     }
 
     private void checkRetreatCondition() {
@@ -159,128 +201,132 @@ public class OrionBoss {
         // 广播消息
         Bukkit.broadcastMessage("§6§lOrion returns with renewed fury!");
         if (comboManager != null) {
-        comboManager.resetComboCount();
+            comboManager.resetComboCount();
+        }
     }
+    
+    // === 新增：获取管理器的方法 ===
+    public OrionComboManager getComboManager() {
+        return comboManager;
     }
-// === 新增：获取管理器的方法 ===
-public OrionComboManager getComboManager() {
-    return comboManager;
-}
 
-public TauntManager getTauntManager() {
-    return tauntManager;
-}
-// === 替换：新的连招攻击系统 ===
-private void performComboAttack() {
-    // 如果正在嘲讽，不执行攻击
-    if (tauntManager.isTaunting()) {
-        return;
+    public TauntManager getTauntManager() {
+        return tauntManager;
     }
     
-    Player target = findNearestPlayer();
-    if (target == null) return;
-    
-    long currentTime = System.currentTimeMillis();
-    double healthPercent = boss.getHealth() / boss.getMaxHealth();
-    
-    // 检查嘲讽触发
-     tauntManager.checkTaunt(healthPercent);
-    if (tauntManager.isTaunting()) {
-        return; // 触发嘲讽，本次不攻击
+    // === 替换：新的连招攻击系统 ===
+    private void performComboAttack() {
+        // 如果正在嘲讽，不执行攻击
+        if (tauntManager.isTaunting()) {
+            return;
+        }
+        
+        Player target = findNearestPlayer();
+        if (target == null) return;
+        
+        long currentTime = System.currentTimeMillis();
+        double healthPercent = boss.getHealth() / boss.getMaxHealth();
+        
+        // 检查嘲讽触发
+        tauntManager.checkTaunt(healthPercent);
+        if (tauntManager.isTaunting()) {
+            return; // 触发嘲讽，本次不攻击
+        }
+        
+        // 获取下一个连招
+        List<Integer> currentCombo = comboManager.getNextCombo(healthPercent);
+        if (currentCombo.isEmpty()) {
+            return;
+        }
+        
+        // 获取连招中的下一个技能
+        int skillId = comboManager.getNextSkillInCombo();
+        if (skillId == 0) {
+            return;
+        }
+        
+        // 根据技能ID执行对应技能（需要检查冷却）
+        switch (skillId) {
+            case 1: // Lava Attack
+                if (currentTime - lastLavaAttack > LAVA_COOLDOWN) {
+                    useLavaAttack(target);
+                    lastLavaAttack = currentTime;
+                } else {
+                    comboManager.resetCombo();
+                }
+                break;
+                
+            case 2: // Skull Attack
+                if (currentTime - lastSkullAttack > SKULL_COOLDOWN) {
+                    useSkullAttack(target);
+                    lastSkullAttack = currentTime;
+                } else {
+                    comboManager.resetCombo();
+                }
+                break;
+                
+            case 3: // Clone Attack
+                if (currentTime - lastCloneAttack > CLONE_COOLDOWN) {
+                    useCloneAttack();
+                    lastCloneAttack = currentTime;
+                } else {
+                    comboManager.resetCombo();
+                }
+                break;
+                
+            case 4: // Void Attack
+                if (currentTime - lastVoidAttack > VOID_COOLDOWN) {
+                    useVoidAttack(target);
+                    lastVoidAttack = currentTime;
+                } else {
+                    comboManager.resetCombo();
+                }
+                break;
+                
+            case 5: // Crystal Attack
+                if (currentTime - lastCrystalAttack > CRYSTAL_COOLDOWN) {
+                    useCrystalAttack(target);
+                    lastCrystalAttack = currentTime;
+                } else {
+                    comboManager.resetCombo();
+                }
+                break;
+                
+            case 6: // Rain Attack
+                if (currentTime - lastRainAttack > RAIN_COOLDOWN) {
+                    useRainAttack(target);
+                    lastRainAttack = currentTime;
+                } else {
+                    comboManager.resetCombo();
+                }
+                break;
+                
+            case 7: // Ultimate Attack
+                if (currentTime - lastUltimateAttack > ULTIMATE_COOLDOWN) {
+                    useUltimateAttack(target);
+                    lastUltimateAttack = currentTime;
+                } else {
+                    comboManager.resetCombo();
+                }
+                break;
+                
+            case 8: // Execution Attack
+                if (healthPercent < 0.5 && currentTime - lastExecutionAttack > EXECUTION_COOLDOWN) {
+                    useExecutionAttack(target);
+                    lastExecutionAttack = currentTime;
+                } else {
+                    comboManager.resetCombo();
+                }
+                break;
+                
+            case -1: // 普通攻击（发射追踪骷髅头）
+                // 注意：这里使用launchTrackingWitherSkull方法，但设置为非充能版
+                launchTrackingWitherSkull(target.getLocation().toVector()
+                    .subtract(boss.getLocation().toVector()).normalize(), false);
+                break;
+        }
     }
-    // 获取下一个连招
-    List<Integer> currentCombo = comboManager.getNextCombo(healthPercent);
-    if (currentCombo.isEmpty()) {
-        return;
-    }
-    
-    // 获取连招中的下一个技能
-    int skillId = comboManager.getNextSkillInCombo();
-    if (skillId == 0) {
-        return;
-    }
-    
-    // 根据技能ID执行对应技能（需要检查冷却）
-    switch (skillId) {
-        case 1: // Lava Attack
-            if (currentTime - lastLavaAttack > LAVA_COOLDOWN) {
-                useLavaAttack(target);
-                lastLavaAttack = currentTime;
-            } else {
-                comboManager.resetCombo();
-            }
-            break;
-            
-        case 2: // Skull Attack
-            if (currentTime - lastSkullAttack > SKULL_COOLDOWN) {
-                useSkullAttack(target);
-                lastSkullAttack = currentTime;
-            } else {
-                comboManager.resetCombo();
-            }
-            break;
-            
-        case 3: // Clone Attack
-            if (currentTime - lastCloneAttack > CLONE_COOLDOWN) {
-                useCloneAttack();
-                lastCloneAttack = currentTime;
-            } else {
-                comboManager.resetCombo();
-            }
-            break;
-            
-        case 4: // Void Attack
-            if (currentTime - lastVoidAttack > VOID_COOLDOWN) {
-                useVoidAttack(target);
-                lastVoidAttack = currentTime;
-            } else {
-                comboManager.resetCombo();
-            }
-            break;
-            
-        case 5: // Crystal Attack
-            if (currentTime - lastCrystalAttack > CRYSTAL_COOLDOWN) {
-                useCrystalAttack(target);
-                lastCrystalAttack = currentTime;
-            } else {
-                comboManager.resetCombo();
-            }
-            break;
-            
-        case 6: // Rain Attack
-            if (currentTime - lastRainAttack > RAIN_COOLDOWN) {
-                useRainAttack(target);
-                lastRainAttack = currentTime;
-            } else {
-                comboManager.resetCombo();
-            }
-            break;
-            
-        case 7: // Ultimate Attack
-            if (currentTime - lastUltimateAttack > ULTIMATE_COOLDOWN) {
-                useUltimateAttack(target);
-                lastUltimateAttack = currentTime;
-            } else {
-                comboManager.resetCombo();
-            }
-            break;
-            
-        case 8: // Execution Attack
-            if (healthPercent < 0.5 && currentTime - lastExecutionAttack > EXECUTION_COOLDOWN) {
-                useExecutionAttack(target);
-                lastExecutionAttack = currentTime;
-            } else {
-                comboManager.resetCombo();
-            }
-            break;
-            
-        case -1: // 普通攻击（发射追踪骷髅头）
-            // 注意：这里使用launchTrackingWitherSkull方法，但设置为非充能版
-            launchTrackingWitherSkull(target.getLocation().toVector()
-                .subtract(boss.getLocation().toVector()).normalize(), false);
-            break;
-    }
-}
+
     private void useLavaAttack(Player target) {
         lastLavaAttack = System.currentTimeMillis();
         
@@ -988,14 +1034,14 @@ private void performComboAttack() {
         }
         activeTrackers.clear();
         // === 新增：清理连招和嘲讽管理器 ===
-    if (tauntManager != null) {
-        tauntManager.cleanup();
-    }
-    if (comboManager != null) {
-        comboManager.resetCombo();
-        comboManager.resetComboCount();
-    }
-    
+        if (tauntManager != null) {
+            tauntManager.cleanup();
+        }
+        if (comboManager != null) {
+            comboManager.resetCombo();
+            comboManager.resetComboCount();
+        }
+        
         // 清理撤退相关字段
         hasRetreated = false;
         hasSummonedApostle = false;
