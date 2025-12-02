@@ -1,5 +1,6 @@
 package com.yourname.orionboss;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -29,6 +30,11 @@ public class ExecutionDragon {
     private double orbitHeight = 8.0;
     private double orbitSpeed = 0.05;
     private double angle = 0;
+    
+    // 新增：锁定距离相关变量
+    private static final double MAX_LOCK_DISTANCE = 250.0; // 最大锁定距离250格
+    private static final double TELEPORT_THRESHOLD = 50.0; // 超过50格自动传送
+    private static final double SPAWN_DISTANCE = 15.0; // 生成距离玩家15格
 
     public ExecutionDragon(OrionBossPlugin plugin, Player target, double damage) {
         this.plugin = plugin;
@@ -40,6 +46,19 @@ public class ExecutionDragon {
         World world = spawnLocation.getWorld();
         if (world == null) return;
 
+        // 如果目标玩家距离生成位置太远，调整生成位置
+        if (target != null && target.isOnline()) {
+            double distance = spawnLocation.distance(target.getLocation());
+            if (distance > SPAWN_DISTANCE) {
+                // 调整到玩家附近15格的位置
+                Vector direction = target.getLocation().toVector()
+                    .subtract(spawnLocation.toVector()).normalize();
+                spawnLocation = target.getLocation().clone()
+                    .subtract(direction.multiply(SPAWN_DISTANCE))
+                    .add(0, 15, 0); // 在空中生成
+            }
+        }
+        
         // 生成末影龙
         dragon = (EnderDragon) world.spawnEntity(spawnLocation, EntityType.ENDER_DRAGON);
         
@@ -96,14 +115,50 @@ public class ExecutionDragon {
                     return;
                 }
                 
-                // 更新盘旋中心点
+                // 检查目标是否存在且在线
                 if (target != null && target.isOnline() && !target.isDead()) {
+                    Location dragonLoc = dragon.getLocation();
+                    Location targetLoc = target.getLocation();
+                    double distance = dragonLoc.distance(targetLoc);
+                    
+                    // 如果距离超过最大锁定距离，放弃目标
+                    if (distance > MAX_LOCK_DISTANCE) {
+                        Bukkit.getLogger().warning("Execution Dragon lost target: distance " + distance + " > " + MAX_LOCK_DISTANCE);
+                        removeDragon();
+                        cancel();
+                        return;
+                    }
+                    
+                    // 如果距离超过传送阈值，直接传送到玩家附近
+                    if (distance > TELEPORT_THRESHOLD) {
+                        // 传送到玩家上方20-30格的位置
+                        Location teleportLoc = targetLoc.clone().add(
+                            (Math.random() - 0.5) * 10, // 随机偏移X
+                            20 + Math.random() * 10,   // 高度20-30格
+                            (Math.random() - 0.5) * 10  // 随机偏移Z
+                        );
+                        
+                        dragon.teleport(teleportLoc);
+                        
+                        // 传送特效
+                        dragonLoc.getWorld().playSound(dragonLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
+                        dragonLoc.getWorld().spawnParticle(Particle.PORTAL, dragonLoc, 20, 1, 1, 1);
+                        teleportLoc.getWorld().spawnParticle(Particle.PORTAL, teleportLoc, 20, 1, 1, 1);
+                        
+                        // 重置轨道中心
+                        orbitCenter = targetLoc.clone();
+                        orbitCenter.setY(orbitCenter.getY() + orbitHeight);
+                        angle = 0; // 重置角度
+                        
+                        Bukkit.getLogger().info("Execution Dragon teleported to target (distance was " + distance + ")");
+                    }
+                    
+                    // 更新盘旋中心点
                     if (orbitCenter == null) {
-                        orbitCenter = target.getLocation().clone();
+                        orbitCenter = targetLoc.clone();
                         orbitCenter.setY(orbitCenter.getY() + orbitHeight);
                     } else {
                         // 平滑跟随玩家位置
-                        Location targetLoc = target.getLocation();
                         orbitCenter.setX(orbitCenter.getX() * 0.9 + targetLoc.getX() * 0.1);
                         orbitCenter.setZ(orbitCenter.getZ() * 0.9 + targetLoc.getZ() * 0.1);
                         orbitCenter.setY(targetLoc.getY() + orbitHeight);
@@ -118,7 +173,7 @@ public class ExecutionDragon {
                     Location targetLocation = new Location(orbitCenter.getWorld(), x, y, z);
                     
                     // 计算朝向
-                    Vector direction = targetLocation.toVector().subtract(dragon.getLocation().toVector()).normalize();
+                    Vector direction = targetLocation.toVector().subtract(dragonLoc.toVector()).normalize();
                     
                     // 平滑移动
                     Vector currentVelocity = dragon.getVelocity();
@@ -128,12 +183,29 @@ public class ExecutionDragon {
                     dragon.setVelocity(newVelocity);
                     
                     // 设置朝向
-                    dragon.teleport(dragon.getLocation().setDirection(direction));
+                    dragon.teleport(dragonLoc.setDirection(direction));
                     
                     // 盘旋粒子效果
                     if (ticks % 5 == 0) {
                         dragon.getWorld().spawnParticle(Particle.DRAGON_BREATH, 
-                            dragon.getLocation(), 3, 1, 1, 1, 0.05);
+                            dragonLoc, 3, 1, 1, 1, 0.05);
+                    }
+                } else {
+                    // 目标丢失，检查附近是否有新目标
+                    Player newTarget = findNewTarget();
+                    if (newTarget != null) {
+                        // 切换到新目标
+                        // 注意：由于target是final，我们不能直接修改
+                        // 这里我们记录日志并移除龙
+                        Bukkit.getLogger().info("Execution Dragon original target lost, finding new target");
+                        removeDragon();
+                        cancel();
+                        return;
+                    } else {
+                        // 没有新目标，移除龙
+                        removeDragon();
+                        cancel();
+                        return;
                     }
                 }
                 
@@ -142,6 +214,26 @@ public class ExecutionDragon {
         };
         
         behaviorTask.runTaskTimer(plugin, 0L, 1L);
+    }
+
+    private Player findNewTarget() {
+        if (dragon == null) return null;
+        
+        Location dragonLoc = dragon.getLocation();
+        Player nearest = null;
+        double nearestDistance = Double.MAX_VALUE;
+        
+        for (Player player : dragon.getWorld().getPlayers()) {
+            if (!EntityUtils.isValidTarget(player)) continue;
+            
+            double distance = player.getLocation().distance(dragonLoc);
+            if (distance < nearestDistance && distance <= MAX_LOCK_DISTANCE) {
+                nearest = player;
+                nearestDistance = distance;
+            }
+        }
+        
+        return nearest;
     }
 
     private void startSonicAttack() {
@@ -153,7 +245,15 @@ public class ExecutionDragon {
                     return;
                 }
                 
+                // 检查目标是否在攻击范围内
                 if (target != null && target.isOnline() && !target.isDead()) {
+                    double distance = dragon.getLocation().distance(target.getLocation());
+                    
+                    // 如果距离超过攻击范围，不执行攻击
+                    if (distance > 40) {
+                        return;
+                    }
+                    
                     // 每3秒执行一次音波攻击
                     if (attackCooldown <= 0) {
                         performSonicAttack();
@@ -174,6 +274,12 @@ public class ExecutionDragon {
         Location dragonLoc = dragon.getLocation();
         Location targetLoc = target.getLocation();
         
+        // 检查距离
+        double distance = dragonLoc.distance(targetLoc);
+        if (distance > 40) {
+            return; // 距离太远，不攻击
+        }
+        
         // 计算方向向量
         Vector direction = targetLoc.toVector().subtract(dragonLoc.toVector()).normalize();
         
@@ -183,19 +289,18 @@ public class ExecutionDragon {
         
         // 音波粒子效果
         new BukkitRunnable() {
-            private double distance = 0;
-            private final double maxDistance = 20.0;
-            private final double step = 1.0;
+            private double traveledDistance = 0;
+            private final double maxDistance = Math.min(40, distance + 10); // 最大40格，或者目标距离+10格
             
             @Override
             public void run() {
-                if (distance > maxDistance) {
+                if (traveledDistance > maxDistance) {
                     cancel();
                     return;
                 }
                 
                 // 计算当前音波位置
-                Vector currentDirection = direction.clone().multiply(distance);
+                Vector currentDirection = direction.clone().multiply(traveledDistance);
                 Location currentLoc = dragonLoc.clone().add(currentDirection);
                 
                 // 生成音波粒子
@@ -209,7 +314,7 @@ public class ExecutionDragon {
                     return;
                 }
                 
-                distance += step;
+                traveledDistance += 1.0;
             }
         }.runTaskTimer(plugin, 0L, 1L);
         
@@ -329,6 +434,16 @@ public class ExecutionDragon {
                 if (target == null || !target.isOnline() || target.isDead()) {
                     removeDragon();
                     cancel();
+                }
+                
+                // 如果距离超过最大锁定距离，清理
+                if (target != null && target.isOnline() && dragon != null) {
+                    double distance = dragon.getLocation().distance(target.getLocation());
+                    if (distance > MAX_LOCK_DISTANCE) {
+                        Bukkit.getLogger().info("Execution Dragon removed due to distance: " + distance);
+                        removeDragon();
+                        cancel();
+                    }
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L);

@@ -41,12 +41,12 @@ public class OrionBoss {
     // Cooldown constants
     private static final long LAVA_COOLDOWN = 3000;
     private static final long SKULL_COOLDOWN = 10000;
-    private static final long CLONE_COOLDOWN = 20000;
+    private static final long CLONE_COOLDOWN = 10000;
     private static final long VOID_COOLDOWN = 45000;
     private static final long CRYSTAL_COOLDOWN = 30000;
     private static final long RAIN_COOLDOWN = 35000;
-    private static final long ULTIMATE_COOLDOWN = 30000;
-    private static final long EXECUTION_COOLDOWN = 25000;
+    private static final long ULTIMATE_COOLDOWN = 20000;
+    private static final long EXECUTION_COOLDOWN = 15000;
     private long lastExecutionAttack = 0;
     
     // Track players for void attack
