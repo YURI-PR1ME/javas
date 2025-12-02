@@ -19,6 +19,10 @@ public class OrionBoss {
     private int attackCounter = 0;
     private final Random random = new Random();
     
+    
+    // === 新增：连招和嘲讽管理器 ===
+    private final OrionComboManager comboManager;
+    private final TauntManager tauntManager;
     // 撤退相关字段
     private boolean hasRetreated = false;
     private boolean hasSummonedApostle = false;
@@ -55,6 +59,8 @@ public class OrionBoss {
     public OrionBoss(Wither boss, OrionBossPlugin plugin) {
         this.boss = boss;
         this.plugin = plugin;
+        this.comboManager = new OrionComboManager(plugin);
+    this.tauntManager = new TauntManager(plugin);
     }
 
     public void startBossBehavior() {
@@ -84,7 +90,7 @@ public class OrionBoss {
                     checkRetreatCondition();
                 }
 
-                performRandomAttack();
+                performComboAttack();
                 updateBossEffects();
                 plugin.updateBossBar(boss);
             }
@@ -152,61 +158,129 @@ public class OrionBoss {
         
         // 广播消息
         Bukkit.broadcastMessage("§6§lOrion returns with renewed fury!");
+        if (comboManager != null) {
+        comboManager.resetComboCount();
     }
+    }
+// === 新增：获取管理器的方法 ===
+public OrionComboManager getComboManager() {
+    return comboManager;
+}
 
-    private void performRandomAttack() {
-        Player target = findNearestPlayer();
-        if (target == null) return;
-
-        long currentTime = System.currentTimeMillis();
-        List<Runnable> availableAttacks = new ArrayList<>();
-
-        // 检查血量是否低于50%且Execution技能可用
-        boolean canUseExecution = boss.getHealth() < boss.getMaxHealth() * 0.5;
-        
-        // Check available attacks based on cooldown
-        if (currentTime - lastLavaAttack > LAVA_COOLDOWN) {
-            availableAttacks.add(() -> useLavaAttack(target));
-        }
-        if (currentTime - lastSkullAttack > SKULL_COOLDOWN) {
-            availableAttacks.add(() -> useSkullAttack(target));
-        }
-        if (currentTime - lastCloneAttack > CLONE_COOLDOWN) {
-            availableAttacks.add(() -> useCloneAttack());
-        }
-        if (currentTime - lastVoidAttack > VOID_COOLDOWN) {
-            availableAttacks.add(() -> useVoidAttack(target));
-        }
-        if (currentTime - lastCrystalAttack > CRYSTAL_COOLDOWN) {
-            availableAttacks.add(() -> useCrystalAttack(target));
-        }
-        if (currentTime - lastRainAttack > RAIN_COOLDOWN) {
-            availableAttacks.add(() -> useRainAttack(target));
-        }
-        if (currentTime - lastUltimateAttack > ULTIMATE_COOLDOWN) {
-            availableAttacks.add(() -> useUltimateAttack(target));
-        }
-        // 新增Execution技能检查
-        if (canUseExecution && currentTime - lastExecutionAttack > EXECUTION_COOLDOWN) {
-            availableAttacks.add(() -> useExecutionAttack(target));
-        }
-
-        if (!availableAttacks.isEmpty()) {
-            // 权重随机攻击 - 基础攻击更频繁
-            int randomIndex = random.nextInt(availableAttacks.size() + 2); // +2 for basic attacks
-            if (randomIndex < availableAttacks.size()) {
-                availableAttacks.get(randomIndex).run();
+public TauntManager getTauntManager() {
+    return tauntManager;
+}
+// === 替换：新的连招攻击系统 ===
+private void performComboAttack() {
+    // 如果正在嘲讽，不执行攻击
+    if (tauntManager.isTaunting()) {
+        return;
+    }
+    
+    Player target = findNearestPlayer();
+    if (target == null) return;
+    
+    long currentTime = System.currentTimeMillis();
+    double healthPercent = boss.getHealth() / boss.getMaxHealth();
+    
+    // 检查嘲讽触发
+     tauntManager.checkTaunt(healthPercent);
+    if (tauntManager.isTaunting()) {
+        return; // 触发嘲讽，本次不攻击
+    }
+    // 获取下一个连招
+    List<Integer> currentCombo = comboManager.getNextCombo(healthPercent);
+    if (currentCombo.isEmpty()) {
+        return;
+    }
+    
+    // 获取连招中的下一个技能
+    int skillId = comboManager.getNextSkillInCombo();
+    if (skillId == 0) {
+        return;
+    }
+    
+    // 根据技能ID执行对应技能（需要检查冷却）
+    switch (skillId) {
+        case 1: // Lava Attack
+            if (currentTime - lastLavaAttack > LAVA_COOLDOWN) {
+                useLavaAttack(target);
+                lastLavaAttack = currentTime;
             } else {
-                // 基础攻击
-                if (random.nextBoolean()) {
-                    useLavaAttack(target);
-                } else {
-                    useSkullAttack(target);
-                }
+                comboManager.resetCombo();
             }
-        }
+            break;
+            
+        case 2: // Skull Attack
+            if (currentTime - lastSkullAttack > SKULL_COOLDOWN) {
+                useSkullAttack(target);
+                lastSkullAttack = currentTime;
+            } else {
+                comboManager.resetCombo();
+            }
+            break;
+            
+        case 3: // Clone Attack
+            if (currentTime - lastCloneAttack > CLONE_COOLDOWN) {
+                useCloneAttack();
+                lastCloneAttack = currentTime;
+            } else {
+                comboManager.resetCombo();
+            }
+            break;
+            
+        case 4: // Void Attack
+            if (currentTime - lastVoidAttack > VOID_COOLDOWN) {
+                useVoidAttack(target);
+                lastVoidAttack = currentTime;
+            } else {
+                comboManager.resetCombo();
+            }
+            break;
+            
+        case 5: // Crystal Attack
+            if (currentTime - lastCrystalAttack > CRYSTAL_COOLDOWN) {
+                useCrystalAttack(target);
+                lastCrystalAttack = currentTime;
+            } else {
+                comboManager.resetCombo();
+            }
+            break;
+            
+        case 6: // Rain Attack
+            if (currentTime - lastRainAttack > RAIN_COOLDOWN) {
+                useRainAttack(target);
+                lastRainAttack = currentTime;
+            } else {
+                comboManager.resetCombo();
+            }
+            break;
+            
+        case 7: // Ultimate Attack
+            if (currentTime - lastUltimateAttack > ULTIMATE_COOLDOWN) {
+                useUltimateAttack(target);
+                lastUltimateAttack = currentTime;
+            } else {
+                comboManager.resetCombo();
+            }
+            break;
+            
+        case 8: // Execution Attack
+            if (healthPercent < 0.5 && currentTime - lastExecutionAttack > EXECUTION_COOLDOWN) {
+                useExecutionAttack(target);
+                lastExecutionAttack = currentTime;
+            } else {
+                comboManager.resetCombo();
+            }
+            break;
+            
+        case -1: // 普通攻击（发射追踪骷髅头）
+            // 注意：这里使用launchTrackingWitherSkull方法，但设置为非充能版
+            launchTrackingWitherSkull(target.getLocation().toVector()
+                .subtract(boss.getLocation().toVector()).normalize(), false);
+            break;
     }
-
+}
     private void useLavaAttack(Player target) {
         lastLavaAttack = System.currentTimeMillis();
         
@@ -913,7 +987,15 @@ public class OrionBoss {
             tracker.cancel();
         }
         activeTrackers.clear();
-        
+        // === 新增：清理连招和嘲讽管理器 ===
+    if (tauntManager != null) {
+        tauntManager.cleanup();
+    }
+    if (comboManager != null) {
+        comboManager.resetCombo();
+        comboManager.resetComboCount();
+    }
+    
         // 清理撤退相关字段
         hasRetreated = false;
         hasSummonedApostle = false;
