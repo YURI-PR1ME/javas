@@ -49,16 +49,12 @@ public class OrionComboManager {
         
         // 血量<50%的特殊连招（根据您的要求）
         lowHealthComboMap.put("special", Arrays.asList(
-            Arrays.asList(1, 2),          // 1,2/3/5/6 -> 取1,2
-            Arrays.asList(1, 3),          // 1,2/3/5/6 -> 取1,3
-            Arrays.asList(1, 5),          // 1,2/3/5/6 -> 取1,5
-            Arrays.asList(1, 6),          // 1,2/3/5/6 -> 取1,6
-            Arrays.asList(2, 6, 3),       // 2,6,3
+            Arrays.asList(5),             // 4
+            Arrays.asList(6),             // 4
             Arrays.asList(4),             // 4
             Arrays.asList(2),             // 2
             Arrays.asList(3),             // 3
-            Arrays.asList(1),             // 1
-            Arrays.asList(-1, -1, -1)     // 普通攻击连接
+            Arrays.asList(1)             // 1
         ));
         
         // 尝试从配置文件加载

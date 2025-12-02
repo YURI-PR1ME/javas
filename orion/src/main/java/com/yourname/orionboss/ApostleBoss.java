@@ -45,6 +45,10 @@ public class ApostleBoss {
     private BukkitRunnable cosmicStormTask;
     private int cosmicStormTicks = 0; // 新增：宇宙雷暴计时器
 
+    // 传送相关
+    private static final double TELEPORT_DISTANCE_THRESHOLD = 30.0; // 传送距离阈值
+    private static final double TELEPORT_RADIUS = 5.0; // 传送半径（在目标周围5格内传送）
+
     public ApostleBoss(Location spawnLocation, OrionBossPlugin plugin) {
         this.spawnLocation = spawnLocation;
         this.plugin = plugin;
@@ -272,6 +276,8 @@ public class ApostleBoss {
                 if (currentPhase == 1) {
                     phaseOneBehavior();
                 } else if (currentPhase == 2) {
+                    // 检查距离并传送
+                    checkDistanceAndTeleport();
                     phaseTwoBehavior(); // 新增：二阶段行为
                 }
                 
@@ -282,6 +288,63 @@ public class ApostleBoss {
             }
         };
         behaviorTask.runTaskTimer(plugin, 0L, 20L); // 每秒执行一次
+    }
+    
+    // 新增：检查距离并传送的方法
+    private void checkDistanceAndTeleport() {
+        // 如果正在释放宇宙雷暴，不执行传送
+        if (isCastingCosmicStorm) {
+            return;
+        }
+        
+        Player target = findNearestPlayer();
+        if (target == null || !target.isOnline() || target.isDead()) {
+            return;
+        }
+        
+        // 检查距离是否大于阈值
+        double distance = apostle.getLocation().distance(target.getLocation());
+        if (distance > TELEPORT_DISTANCE_THRESHOLD) {
+            // 传送到目标相同高度（保持Y坐标相同）
+            Location targetLoc = target.getLocation();
+            
+            // 在目标周围随机选择一个点（保持相同高度）
+            double angle = random.nextDouble() * 2 * Math.PI;
+            double radius = random.nextDouble() * TELEPORT_RADIUS;
+            double x = targetLoc.getX() + radius * Math.cos(angle);
+            double z = targetLoc.getZ() + radius * Math.sin(angle);
+            double y = targetLoc.getY(); // 保持相同高度
+            
+            Location teleportLocation = new Location(target.getWorld(), x, y, z);
+            
+            // 确保传送位置是安全的（不是方块内部）
+            if (teleportLocation.getBlock().getType() != Material.AIR || 
+                teleportLocation.clone().add(0, 1, 0).getBlock().getType() != Material.AIR) {
+                // 如果不安全，尝试调整高度
+                teleportLocation.setY(teleportLocation.getWorld().getHighestBlockYAt(teleportLocation) + 1);
+            }
+            
+            // 执行传送
+            apostle.teleport(teleportLocation);
+            
+            // 传送特效
+            apostle.getWorld().playSound(apostle.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.8f);
+            apostle.getWorld().spawnParticle(Particle.PORTAL, apostle.getLocation(), 30, 1, 1, 1);
+            
+            // 检查宇宙雷暴技能是否在冷却中
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastCosmicStorm > COSMIC_STORM_COOLDOWN) {
+                // 不在冷却中，释放宇宙雷暴技能
+                useCosmicStorm(target);
+                lastCosmicStorm = currentTime;
+                
+                // 广播消息
+                Bukkit.broadcastMessage("§4§lApostle teleports and unleashes Cosmic Storm!");
+            } else {
+                // 在冷却中，只传送不释放技能
+                Bukkit.broadcastMessage("§4§lApostle teleports to close the distance!");
+            }
+        }
     }
 
     private void phaseOneBehavior() {
@@ -490,108 +553,108 @@ public class ApostleBoss {
         
         cosmicStormTask.runTaskTimer(plugin, 0L, 1L);
     }
-   // 宇宙雷暴单次攻击
-private void performCosmicStormAttack() {
-    Location center = apostle.getLocation();
-    World world = center.getWorld();
-    
-    // 3倍密度：每次攻击生成9-15个闪电爆炸点（原来是3-5个）
-    int attacks = 9 + random.nextInt(7); // 9-15个攻击点
-    
-    for (int attackIndex = 0; attackIndex < attacks; attackIndex++) {
-        // 在使徒周围圆面内均匀分布（不是只在圆周上）
-        // 使用 reject sampling 确保在整个圆面均匀分布
-        double x, z;
+
+    // 宇宙雷暴单次攻击
+    private void performCosmicStormAttack() {
+        Location center = apostle.getLocation();
+        World world = center.getWorld();
         
-        // 通过随机选择正方形内的点，并检查是否在圆内
-        do {
-            x = (random.nextDouble() * 2 - 1) * 30; // -30 到 30
-            z = (random.nextDouble() * 2 - 1) * 30; // -30 到 30
-        } while (x * x + z * z > 30 * 30); // 确保在半径30的圆内
+        // 3倍密度：每次攻击生成9-15个闪电爆炸点（原来是3-5个）
+        int attacks = 9 + random.nextInt(7); // 9-15个攻击点
         
-        // 计算最终位置
-        double finalX = center.getX() + x;
-        double finalZ = center.getZ() + z;
-        
-        // 找到地面高度
-        Location targetLoc = new Location(world, finalX, center.getY(), finalZ);
-        double groundY = world.getHighestBlockYAt(targetLoc) + 1;
-        
-        // 确保Y坐标在合理范围内
-        double adjustedY = groundY;
-        if (adjustedY < center.getY() - 5) {
-            adjustedY = center.getY() - 5;
-        } else if (adjustedY > center.getY() + 20) {
-            adjustedY = center.getY() + 20;
-        }
-        
-        final Location finalTargetLoc = new Location(world, finalX, adjustedY, finalZ);
-        
-        // 第一阶段：闪电打击
-        world.strikeLightning(finalTargetLoc);
-        
-        // 闪电特效
-        world.playSound(finalTargetLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.2f, 0.9f);
-        world.spawnParticle(Particle.FLASH, finalTargetLoc, 3, 0.5, 0.5, 0.5);
-        
-        // 第二阶段：0.3秒后生成水晶并爆炸
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                // 生成1-2个末影水晶
-                int crystalCount = 1 + random.nextInt(2);
-                for (int crystalIndex = 0; crystalIndex < crystalCount; crystalIndex++) {
-                    // 在水晶位置周围随机偏移
-                    double offsetX = (random.nextDouble() - 0.5) * 3;
-                    double offsetZ = (random.nextDouble() - 0.5) * 3;
-                    
-                    Location crystalLoc = finalTargetLoc.clone().add(offsetX, 1, offsetZ);
-                    
-                    // 确保水晶位置合理
-                    crystalLoc.setY(world.getHighestBlockYAt(crystalLoc) + 1);
-                    
-                    EnderCrystal crystal = world.spawn(crystalLoc, EnderCrystal.class);
-                    crystal.setShowingBottom(false);
-                    
-                    // 水晶生成特效
-                    world.playSound(crystalLoc, Sound.ENTITY_ENDER_DRAGON_FLAP, 0.8f, 1.2f);
-                    world.spawnParticle(Particle.PORTAL, crystalLoc, 8, 0.4, 0.4, 0.4);
-                    
-                    // 0.3秒后水晶爆炸
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            // 爆炸伤害（水晶伤害）- 威力略微降低以平衡性能
-                            world.createExplosion(crystalLoc, 5.5f, true, true, apostle);
-                            crystal.remove();
-                            
-                            // 爆炸特效
-                            world.playSound(crystalLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.8f, 0.8f);
-                            world.spawnParticle(Particle.EXPLOSION, crystalLoc, 1);
-                            world.spawnParticle(Particle.FLAME, crystalLoc, 15, 1, 1, 1);
-                        }
-                    }.runTaskLater(plugin, 6L); // 0.3秒后
-                }
+        for (int attackIndex = 0; attackIndex < attacks; attackIndex++) {
+            // 在使徒周围圆面内均匀分布（不是只在圆周上）
+            // 使用 reject sampling 确保在整个圆面均匀分布
+            double x, z;
+            
+            // 通过随机选择正方形内的点，并检查是否在圆内
+            do {
+                x = (random.nextDouble() * 2 - 1) * 30; // -30 到 30
+                z = (random.nextDouble() * 2 - 1) * 30; // -30 到 30
+            } while (x * x + z * z > 30 * 30); // 确保在半径30的圆内
+            
+            // 计算最终位置
+            double finalX = center.getX() + x;
+            double finalZ = center.getZ() + z;
+            
+            // 找到地面高度
+            Location targetLoc = new Location(world, finalX, center.getY(), finalZ);
+            double groundY = world.getHighestBlockYAt(targetLoc) + 1;
+            
+            // 确保Y坐标在合理范围内
+            double adjustedY = groundY;
+            if (adjustedY < center.getY() - 5) {
+                adjustedY = center.getY() - 5;
+            } else if (adjustedY > center.getY() + 20) {
+                adjustedY = center.getY() + 20;
             }
-        }.runTaskLater(plugin, 6L); // 0.3秒后
-        
-        // 在闪电位置周围添加一些随机电火花
-        for (int sparkIndex = 0; sparkIndex < 3; sparkIndex++) {
-            Location sparkLoc = finalTargetLoc.clone().add(
-                (random.nextDouble() - 0.5) * 5,
-                random.nextDouble() * 2,
-                (random.nextDouble() - 0.5) * 5
-            );
-            world.spawnParticle(Particle.ELECTRIC_SPARK, sparkLoc, 2, 0.2, 0.2, 0.2);
+            
+            final Location finalTargetLoc = new Location(world, finalX, adjustedY, finalZ);
+            
+            // 第一阶段：闪电打击
+            world.strikeLightning(finalTargetLoc);
+            
+            // 闪电特效
+            world.playSound(finalTargetLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.2f, 0.9f);
+            world.spawnParticle(Particle.FLASH, finalTargetLoc, 3, 0.5, 0.5, 0.5);
+            
+            // 第二阶段：0.3秒后生成水晶并爆炸
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    // 生成1-2个末影水晶
+                    int crystalCount = 1 + random.nextInt(2);
+                    for (int crystalIndex = 0; crystalIndex < crystalCount; crystalIndex++) {
+                        // 在水晶位置周围随机偏移
+                        double offsetX = (random.nextDouble() - 0.5) * 3;
+                        double offsetZ = (random.nextDouble() - 0.5) * 3;
+                        
+                        Location crystalLoc = finalTargetLoc.clone().add(offsetX, 1, offsetZ);
+                        
+                        // 确保水晶位置合理
+                        crystalLoc.setY(world.getHighestBlockYAt(crystalLoc) + 1);
+                        
+                        EnderCrystal crystal = world.spawn(crystalLoc, EnderCrystal.class);
+                        crystal.setShowingBottom(false);
+                        
+                        // 水晶生成特效
+                        world.playSound(crystalLoc, Sound.ENTITY_ENDER_DRAGON_FLAP, 0.8f, 1.2f);
+                        world.spawnParticle(Particle.PORTAL, crystalLoc, 8, 0.4, 0.4, 0.4);
+                        
+                        // 0.3秒后水晶爆炸
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                // 爆炸伤害（水晶伤害）- 威力略微降低以平衡性能
+                                world.createExplosion(crystalLoc, 5.5f, true, true, apostle);
+                                crystal.remove();
+                                
+                                // 爆炸特效
+                                world.playSound(crystalLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.8f, 0.8f);
+                                world.spawnParticle(Particle.EXPLOSION, crystalLoc, 1);
+                                world.spawnParticle(Particle.FLAME, crystalLoc, 15, 1, 1, 1);
+                            }
+                        }.runTaskLater(plugin, 6L); // 0.3秒后
+                    }
+                }
+            }.runTaskLater(plugin, 6L); // 0.3秒后
+            
+            // 在闪电位置周围添加一些随机电火花
+            for (int sparkIndex = 0; sparkIndex < 3; sparkIndex++) {
+                Location sparkLoc = finalTargetLoc.clone().add(
+                    (random.nextDouble() - 0.5) * 5,
+                    random.nextDouble() * 2,
+                    (random.nextDouble() - 0.5) * 5
+                );
+                world.spawnParticle(Particle.ELECTRIC_SPARK, sparkLoc, 2, 0.2, 0.2, 0.2);
+            }
         }
+        
+        // 使徒周围的持续特效
+        world.spawnParticle(Particle.CLOUD, center, 5, 1, 1, 1);
+        world.spawnParticle(Particle.ELECTRIC_SPARK, center, 8, 0.8, 0.8, 0.8);
     }
     
-    // 使徒周围的持续特效
-    world.spawnParticle(Particle.CLOUD, center, 5, 1, 1, 1);
-    world.spawnParticle(Particle.ELECTRIC_SPARK, center, 8, 0.8, 0.8, 0.8);
-} 
-    // 宇宙雷暴单次攻击
-   // 宇宙雷暴单次攻击
     // 结束宇宙雷暴技能
     private void endCosmicStorm() {
         isCastingCosmicStorm = false;

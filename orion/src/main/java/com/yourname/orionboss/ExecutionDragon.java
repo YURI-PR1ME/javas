@@ -327,7 +327,7 @@ public class ExecutionDragon {
         if (target.isDead() || !target.isOnline()) return;
         
         // 造成音波伤害
-        target.damage(10.0, dragon);
+        target.damage(30.0, dragon);
         
         // 音波击退效果
         Vector knockback = target.getLocation().toVector()
