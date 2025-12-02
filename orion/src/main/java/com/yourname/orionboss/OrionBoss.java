@@ -399,13 +399,13 @@ public class OrionBoss {
         Location voidLocation = new Location(
             target.getWorld(),
             target.getLocation().getX(),
-            -10, // Deep in void
+            -70, // Deep in void
             target.getLocation().getZ()
         );
         
         // Teleport player and boss to void
         target.teleport(voidLocation);
-        boss.teleport(voidLocation.add(0, 5, 0));
+        boss.teleport(voidLocation.add(0, 10, 0));
         
         playerOriginalLocations.put(target.getUniqueId(), originalLocation);
         
@@ -426,7 +426,7 @@ public class OrionBoss {
         };
         
         voidTasks.put(target.getUniqueId(), returnTask);
-        returnTask.runTaskLater(plugin, 20L); // 1 second
+        returnTask.runTaskLater(plugin, 60L); // 3 second
     }
 
     private void useCrystalAttack(Player target) {
