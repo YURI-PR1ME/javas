@@ -34,12 +34,12 @@ com/yourname/orionboss/OrionBoss$2.class
 com/yourname/orionboss/TauntManager$1.class
 com/yourname/orionboss/ApostleBoss$8.class
 com/yourname/orionboss/ApostleBoss.class
-com/yourname/orionboss/ExecutionDragon.class
-com/yourname/orionboss/OrionBoss$7.class
 com/yourname/orionboss/ExecutionFireball$2.class
+com/yourname/orionboss/OrionBoss$7.class
+com/yourname/orionboss/ExecutionDragon.class
 com/yourname/orionboss/ApostleBoss$3.class
 com/yourname/orionboss/TreasureBagListener.class
 com/yourname/orionboss/WitherSkullTracker.class
-com/yourname/orionboss/ApostleListener.class
 com/yourname/orionboss/ExecutionFireball.class
 com/yourname/orionboss/ExecutionDragon$2.class
+com/yourname/orionboss/ApostleListener.class

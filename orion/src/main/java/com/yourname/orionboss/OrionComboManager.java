@@ -21,7 +21,7 @@ public class OrionComboManager {
     private List<Integer> currentCombo = new ArrayList<>();
     private int comboStep = 0;
     private long lastComboTime = 0;
-    private static final long COMBO_RESET_TIME = 10000;
+    private static final long COMBO_RESET_TIME = 10000; // 10秒未完成连招则重置
     private final Random random = new Random();
     
     // 连招计数器
@@ -35,36 +35,30 @@ public class OrionComboManager {
     private void loadCombos() {
         // 默认连招配置
         comboMap.put("normal", Arrays.asList(
-            Arrays.asList(1, -1, 2),
-            Arrays.asList(4),
-            Arrays.asList(2),
-            Arrays.asList(3),
-            Arrays.asList(1),
-            Arrays.asList(1, -1, 3),
-            Arrays.asList(1, -1, 4),
-            Arrays.asList(2, -1, -1, 3),
-            Arrays.asList(4, -1, 5),
-            Arrays.asList(6, -1, -1, 1),
-            Arrays.asList(3, -1, 2, -1, 4)
+            Arrays.asList(1, -1, 2),      // Lava -> A -> Skull
+            Arrays.asList(2, -1, -1, 3),  // Skull -> A -> A -> Clone
+            Arrays.asList(4, -1, 5),      // Void -> A -> Crystal
+            Arrays.asList(6, -1, -1, 1),  // Rain -> A -> A -> Lava
+            Arrays.asList(3, -1, 2, -1, 4) // Clone -> A -> Skull -> A -> Void
         ));
         
         comboMap.put("crucial", Arrays.asList(
-            Arrays.asList(7),
-            Arrays.asList(8)
+            Arrays.asList(7),             // Ultimate
+            Arrays.asList(8)              // Execution
         ));
         
-        // 血量<50%的特殊连招
+        // 血量<50%的特殊连招（根据您的要求）
         lowHealthComboMap.put("special", Arrays.asList(
-            Arrays.asList(1, 2),
-            Arrays.asList(1, 3),
-            Arrays.asList(1, 5),
-            Arrays.asList(1, 6),
-            Arrays.asList(2, 6, 3),
-            Arrays.asList(4),
-            Arrays.asList(2),
-            Arrays.asList(3),
-            Arrays.asList(1),
-            Arrays.asList(-1, -1, -1)
+            Arrays.asList(1, 2),          // 1,2/3/5/6 -> 取1,2
+            Arrays.asList(1, 3),          // 1,2/3/5/6 -> 取1,3
+            Arrays.asList(1, 5),          // 1,2/3/5/6 -> 取1,5
+            Arrays.asList(1, 6),          // 1,2/3/5/6 -> 取1,6
+            Arrays.asList(2, 6, 3),       // 2,6,3
+            Arrays.asList(4),             // 4
+            Arrays.asList(2),             // 2
+            Arrays.asList(3),             // 3
+            Arrays.asList(1),             // 1
+            Arrays.asList(-1, -1, -1)     // 普通攻击连接
         ));
         
         // 尝试从配置文件加载
@@ -78,6 +72,7 @@ public class OrionComboManager {
         }
         comboConfig = YamlConfiguration.loadConfiguration(comboFile);
         
+        // 加载自定义连招
         loadCustomCombos();
     }
     
@@ -126,7 +121,9 @@ public class OrionComboManager {
         return combo;
     }
     
+    // 获取下一个连招
     public List<Integer> getNextCombo(double healthPercent) {
+        // 如果有未完成的连招且未超时，继续执行
         if (!currentCombo.isEmpty() && comboStep < currentCombo.size()) {
             if (System.currentTimeMillis() - lastComboTime > COMBO_RESET_TIME) {
                 resetCombo();
@@ -135,13 +132,16 @@ public class OrionComboManager {
             }
         }
         
+        // 选择新的连招
         List<List<Integer>> availableCombos = new ArrayList<>();
         
         if (healthPercent < 0.5) {
+            // 血量<50%：可以执行所有连招
             availableCombos.addAll(comboMap.getOrDefault("normal", new ArrayList<>()));
             availableCombos.addAll(comboMap.getOrDefault("crucial", new ArrayList<>()));
             availableCombos.addAll(lowHealthComboMap.getOrDefault("special", new ArrayList<>()));
         } else {
+            // 血量≥50%：只执行普通连招
             availableCombos.addAll(comboMap.getOrDefault("normal", new ArrayList<>()));
         }
         
@@ -149,6 +149,7 @@ public class OrionComboManager {
             return new ArrayList<>();
         }
         
+        // 随机选择一个连招
         currentCombo = new ArrayList<>(availableCombos.get(random.nextInt(availableCombos.size())));
         comboStep = 0;
         lastComboTime = System.currentTimeMillis();
@@ -157,15 +158,17 @@ public class OrionComboManager {
         return currentCombo;
     }
     
+    // 获取连招中的下一个技能
     public int getNextSkillInCombo() {
         if (currentCombo.isEmpty() || comboStep >= currentCombo.size()) {
-            return 0;
+            return 0; // 连招结束
         }
         
         int skill = currentCombo.get(comboStep);
         comboStep++;
         lastComboTime = System.currentTimeMillis();
         
+        // 如果连招完成，准备下一个
         if (comboStep >= currentCombo.size()) {
             comboStep = 0;
             currentCombo.clear();
@@ -174,19 +177,23 @@ public class OrionComboManager {
         return skill;
     }
     
+    // 重置连招
     public void resetCombo() {
         currentCombo.clear();
         comboStep = 0;
     }
     
+    // 获取连招计数器
     public int getComboCount() {
         return comboCount;
     }
     
+    // 重置连招计数器
     public void resetComboCount() {
         comboCount = 0;
     }
     
+    // 自定义添加连招
     public void addCustomCombo(String type, List<Integer> combo) {
         switch (type.toLowerCase()) {
             case "normal":
@@ -203,6 +210,7 @@ public class OrionComboManager {
     }
     
     private void saveToConfig() {
+        // 保存到配置文件
         int normalIndex = 1;
         for (List<Integer> combo : comboMap.get("normal")) {
             comboConfig.set("normal_combos.combo_" + normalIndex, comboToString(combo));
@@ -233,6 +241,7 @@ public class OrionComboManager {
         return sb.toString();
     }
     
+    // 获取当前连招信息
     public String getComboInfo() {
         if (currentCombo.isEmpty()) {
             return "无连招";
