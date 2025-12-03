@@ -116,7 +116,7 @@ public class BGMPlayer {
     }
     
     /**
-     * 内部停止方法，不设置isTransitioning
+     * 内部停止方法，使用Bukkit的stopSound方法完全停止声音
      */
     private void stopAllBGMInternal() {
         // 停止全局循环任务
@@ -125,23 +125,42 @@ public class BGMPlayer {
             globalBgmTask = null;
         }
         
-        // 停止所有在线玩家的音乐（无论他们在哪个世界）
-        if (currentSoundName != null && !currentSoundName.isEmpty()) {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                try {
-                    // 使用 stopSound 方法停止特定声音
-                    player.stopSound(currentSoundName);
-                } catch (Exception e) {
-                    plugin.getLogger().warning("停止玩家 " + player.getName() + " 的BGM时出错: " + e.getMessage());
-                }
-            }
-            
-            plugin.getLogger().info("已停止所有玩家的BGM: " + currentSoundName);
+        // 使用Bukkit的stopSound方法完全停止所有玩家的音乐
+        // 这相当于执行/stopsound @a命令
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            stopSoundCompletely(player);
         }
         
         // 清理状态
         isPlaying = false;
         currentSoundName = "";
+        
+        plugin.getLogger().info("已使用stopSound方法停止所有玩家的BGM");
+    }
+    
+    /**
+     * 完全停止玩家的声音，相当于/stopsound命令
+     */
+    private void stopSoundCompletely(Player player) {
+        try {
+            // 方法1：停止特定声音（如果知道声音名称）
+            if (currentSoundName != null && !currentSoundName.isEmpty()) {
+                player.stopSound(currentSoundName);
+            }
+            
+            // 方法2：停止整个音乐类别的所有声音（更彻底）
+            player.stopSound(SoundCategory.MUSIC);
+            
+            // 方法3：停止所有类别的特定声音（如果需要）
+            // 停止所有我们可能播放的BGM声音
+            for (BGMTrack track : BGMTrack.values()) {
+                player.stopSound(track.getSoundName());
+            }
+            
+            plugin.getLogger().fine("已完全停止玩家 " + player.getName() + " 的BGM");
+        } catch (Exception e) {
+            plugin.getLogger().warning("停止玩家 " + player.getName() + " 的BGM时出错: " + e.getMessage());
+        }
     }
     
     /**
@@ -164,8 +183,8 @@ public class BGMPlayer {
         for (Player player : players) {
             if (player.isOnline() && player.getWorld().getEnvironment() == World.Environment.THE_END) {
                 try {
-                    // 先停止可能正在播放的同一声音
-                    player.stopSound(track.getSoundName());
+                    // 先完全停止可能正在播放的声音
+                    stopSoundCompletely(player);
                     
                     // 延迟1tick再播放，确保停止生效
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -247,16 +266,8 @@ public class BGMPlayer {
      */
     public void stopBGMForPlayer(Player player) {
         synchronized (lock) {
-            if (currentSoundName != null && !currentSoundName.isEmpty()) {
-                try {
-                    player.stopSound(currentSoundName);
-                    plugin.getLogger().info("停止玩家 " + player.getName() + " 的BGM");
-                } catch (Exception e) {
-                    plugin.getLogger().warning("停止玩家BGM时出错: " + e.getMessage());
-                }
-            }
-            
-            // 发送停止提示（可选）
+            stopSoundCompletely(player);
+            plugin.getLogger().info("停止玩家 " + player.getName() + " 的BGM");
             player.sendMessage("§7[音乐] 战斗BGM已停止");
         }
     }
@@ -269,8 +280,6 @@ public class BGMPlayer {
             if (currentPhase == newPhase) return;
             
             plugin.getLogger().info("BGM阶段切换: " + currentPhase + " -> " + newPhase);
-            
-            currentPhase = newPhase;
             
             // 停止当前音乐并播放新阶段的音乐
             playBGMForAll(newPhase);
