@@ -294,19 +294,19 @@ public class BGMPlayer {
         
         switch (phase) {
             case ORION_NORMAL:
-                message = "§7[音乐] §6史诗般的BGM响起，猎户座的战斗开始了！";
+                message = "§7[音乐] §6LET'S HAVE SOME FUN'！";
                 break;
             case ORION_RAGE:
-                message = "§7[音乐] §c音乐变得激昂！猎户座进入狂怒状态！";
+                message = "§7[音乐] §cIT'sNOT OVER ,KID'！";
                 break;
             case APOSTLE:
-                message = "§7[音乐] §5神秘的旋律响起，使徒降临战场！";
+                message = "§7[音乐] §5WE BELIEVE IN GOD!！";
                 break;
             case ORION_FINAL:
-                message = "§7[音乐] §4最终决战的音乐响起，胜负即将揭晓！";
+                message = "§7[音乐] §4A GOD DOSE NOT FEAR DEATH！";
                 break;
             default:
-                message = "§7[音乐] §a战斗BGM开始播放";
+                message = "§7[音乐] §aIT's ONLY BEGIN!";
         }
         
         // 只向末地玩家广播

@@ -159,7 +159,7 @@ public class OrionBoss {
             if (plugin.getBgmPlayer() != null) {
                 plugin.getBgmPlayer().updateBossPhase(BGMPlayer.BossPhase.ORION_RAGE);
             }
-            Bukkit.broadcastMessage("§4§l猎户座进入狂怒状态！BGM切换！");
+            Bukkit.broadcastMessage("§4§lIT's NOT OVER, KID'！");
         }
         
         if (healthPercent < 0.2 && !isFinalPhase) {
@@ -169,7 +169,7 @@ public class OrionBoss {
             if (plugin.getBgmPlayer() != null) {
                 plugin.getBgmPlayer().updateBossPhase(BGMPlayer.BossPhase.ORION_FINAL);
             }
-            Bukkit.broadcastMessage("§4§l最终决战！猎户座垂死挣扎！");
+            Bukkit.broadcastMessage("§4§lA GOD DOSE DOT FEAR DEATH!!");
         }
     }
 
