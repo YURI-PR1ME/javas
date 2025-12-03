@@ -26,7 +26,8 @@ public class ApostleBoss {
     private BossBar bossBar;
     private int currentPhase = 1; // 1: 幻术师, 2: 尸壳
     private final Random random = new Random();
-
+private long lastTeleportTime = 0;
+private static final long TELEPORT_COOLDOWN = 5000; // 
     // 技能冷却
     private long lastFlameAttack = 0;
     private long lastPotionRain = 0;
@@ -76,7 +77,76 @@ public class ApostleBoss {
         // 给予保护效果
         apostle.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, Integer.MAX_VALUE, 1, false, false));
     }
-
+private void chaseTeleport() {
+    // 如果正在释放宇宙雷暴，不执行传送
+    if (isCastingCosmicStorm) {
+        return;
+    }
+    
+    Player target = findNearestPlayer();
+    if (target == null || !target.isOnline() || target.isDead()) {
+        return;
+    }
+    
+    // 检查距离是否大于30格
+    double distance = apostle.getLocation().distance(target.getLocation());
+    if (distance > 30.0) {
+        long currentTime = System.currentTimeMillis();
+        
+        // 检查传送冷却
+        if (currentTime - lastTeleportTime < TELEPORT_COOLDOWN) {
+            return;
+        }
+        
+        // 计算传送位置（玩家上方5格）
+        Location targetLoc = target.getLocation();
+        Location teleportLoc = targetLoc.clone().add(
+            (random.nextDouble() - 0.5) * 5,  // X轴随机偏移
+            5,  // Y轴高度（玩家上方5格）
+            (random.nextDouble() - 0.5) * 5   // Z轴随机偏移
+        );
+        
+        // 确保传送位置安全（不是方块内部）
+        if (teleportLoc.getBlock().getType() != Material.AIR || 
+            teleportLoc.clone().add(0, 1, 0).getBlock().getType() != Material.AIR) {
+            // 如果不安全，调整到安全高度
+            teleportLoc.setY(teleportLoc.getWorld().getHighestBlockYAt(teleportLoc) + 2);
+        }
+        
+        // 执行传送
+        apostle.teleport(teleportLoc);
+        lastTeleportTime = currentTime;
+        
+        // 传送特效
+        apostle.getWorld().playSound(apostle.getLocation(), 
+            Sound.ENTITY_ENDERMAN_TELEPORT, 2.0f, 0.8f);
+        apostle.getWorld().spawnParticle(Particle.PORTAL, 
+            apostle.getLocation(), 30, 1, 1, 1);
+        apostle.getWorld().spawnParticle(Particle.REVERSE_PORTAL, 
+            apostle.getLocation(), 20, 1, 1, 1);
+        
+        // 如果宇宙雷暴不在冷却中，可以结合使用
+        if (currentTime - lastCosmicStorm > COSMIC_STORM_COOLDOWN) {
+            // 有一定概率立即使用宇宙雷暴
+            if (random.nextDouble() < 0.3) { // 30%概率
+                useCosmicStorm(target);
+                lastCosmicStorm = currentTime;
+                Bukkit.broadcastMessage("§4§lApostle teleports and unleashes Cosmic Storm!");
+            } else {
+                Bukkit.broadcastMessage("§4§lApostle teleports to chase you down!");
+            }
+        } else {
+            Bukkit.broadcastMessage("§4§lApostle teleports to chase you down!");
+        }
+        
+        // 给目标玩家警告
+        if (target != null && target.isOnline()) {
+            target.sendMessage("§cApostle teleported right above you!");
+            target.playSound(target.getLocation(), 
+                Sound.ENTITY_WITHER_AMBIENT, 1.5f, 0.9f);
+        }
+    }
+}
     private void switchToPhaseTwo() {
         currentPhase = 2;
         
@@ -257,42 +327,44 @@ public class ApostleBoss {
         bossBar.setProgress(apostle.getHealth() / apostle.getMaxHealth());
     }
 
-    private void startBehavior() {
-        behaviorTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!apostle.isValid() || apostle.isDead()) {
-                    onDeath();
-                    cancel();
-                    return;
-                }
-
-                // 检查阶段转换
-                if (currentPhase == 1 && apostle.getHealth() <= apostle.getMaxHealth() * 0.8) {
-                    switchToPhaseTwo();
-                }
-
-                // 更新BossBar
-                updateBossBar();
-
-                // 执行阶段行为
-                if (currentPhase == 1) {
-                    phaseOneBehavior();
-                } else if (currentPhase == 2) {
-                    // 检查距离并传送
-                    checkDistanceAndTeleport();
-                    phaseTwoBehavior(); // 新增：二阶段行为
-                }
-                
-                // 检查并补充死亡的镜像
-                if (currentPhase == 2) {
-                    checkAndReplenishMirrors();
-                }
+   private void startBehavior() {
+    behaviorTask = new BukkitRunnable() {
+        @Override
+        public void run() {
+            if (!apostle.isValid() || apostle.isDead()) {
+                onDeath();
+                cancel();
+                return;
             }
-        };
-        behaviorTask.runTaskTimer(plugin, 0L, 20L); // 每秒执行一次
-    }
-    
+
+            // 检查阶段转换
+            if (currentPhase == 1 && apostle.getHealth() <= apostle.getMaxHealth() * 0.8) {
+                switchToPhaseTwo();
+            }
+
+            // 更新BossBar
+            updateBossBar();
+
+            // 执行阶段行为
+            if (currentPhase == 1) {
+                phaseOneBehavior();
+            } else if (currentPhase == 2) {
+                // 检查距离并传送（原方法，用于普通追击）
+                checkDistanceAndTeleport();
+                // 新增：二阶段追杀传送
+                chaseTeleport();
+                // 原有二阶段行为
+                phaseTwoBehavior();
+            }
+            
+            // 检查并补充死亡的镜像
+            if (currentPhase == 2) {
+                checkAndReplenishMirrors();
+            }
+        }
+    };
+    behaviorTask.runTaskTimer(plugin, 0L, 20L); // 每秒执行一次
+} 
     // 新增：检查距离并传送的方法
     private void checkDistanceAndTeleport() {
         // 如果正在释放宇宙雷暴，不执行传送
@@ -370,30 +442,32 @@ public class ApostleBoss {
     }
     
     // 新增：二阶段行为
-    private void phaseTwoBehavior() {
-        Player target = findNearestPlayer();
-        if (target == null) return;
-        
-        long currentTime = System.currentTimeMillis();
-        
-        // 二阶段技能：宇宙雷暴
-        if (currentTime - lastCosmicStorm > COSMIC_STORM_COOLDOWN && random.nextDouble() < 0.2) {
-            useCosmicStorm(target);
-            lastCosmicStorm = currentTime;
-        }
-        // 二阶段也可以使用一阶段的技能
-        else if (currentTime - lastFlameAttack > FLAME_COOLDOWN && random.nextDouble() < 0.25) {
-            useFlameAttack(target);
-            lastFlameAttack = currentTime;
-        } else if (currentTime - lastPotionRain > POTION_RAIN_COOLDOWN && random.nextDouble() < 0.15) {
-            usePotionRain(target);
-            lastPotionRain = currentTime;
-        } else {
-            // 普通攻击
-            shootArrow(target);
-        }
+private void phaseTwoBehavior() {
+    Player target = findNearestPlayer();
+    if (target == null) return;
+    
+    long currentTime = System.currentTimeMillis();
+    
+    // 先检查追杀传送
+    chaseTeleport();
+    
+    // 然后执行原有技能逻辑
+    if (currentTime - lastCosmicStorm > COSMIC_STORM_COOLDOWN && random.nextDouble() < 0.2) {
+        useCosmicStorm(target);
+        lastCosmicStorm = currentTime;
     }
-
+    // 二阶段也可以使用一阶段的技能
+    else if (currentTime - lastFlameAttack > FLAME_COOLDOWN && random.nextDouble() < 0.25) {
+        useFlameAttack(target);
+        lastFlameAttack = currentTime;
+    } else if (currentTime - lastPotionRain > POTION_RAIN_COOLDOWN && random.nextDouble() < 0.15) {
+        usePotionRain(target);
+        lastPotionRain = currentTime;
+    } else {
+        // 普通攻击
+        shootArrow(target);
+    }
+}
     private void useFlameAttack(Player target) {
         // 发射3个缓慢跟踪的火焰弹
         for (int i = 0; i < 3; i++) {

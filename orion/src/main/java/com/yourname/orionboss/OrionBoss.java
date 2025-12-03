@@ -179,65 +179,65 @@ public class OrionBoss {
         }
     }
 
-    private void retreatAndSummonApostle() {
-        // 保存状态
-        savedHealth = boss.getHealth();
-        retreatLocation = boss.getLocation().clone();
-        hasRetreated = true;
-        hasSummonedApostle = true;
-        
-        // 使Orion消失（无敌+隐身+静默）
-        boss.setInvulnerable(true);
-        boss.setInvisible(true);
-        boss.setSilent(true);
-        boss.setAI(false);
-        boss.setGravity(false);
-        
-        // 传送到高空隐藏
-        boss.teleport(boss.getLocation().add(0, 100, 0));
-        
-        // 隐藏BossBar
-        plugin.hideBossBarFromAllPlayers();
-        
-        // 广播消息
-        Bukkit.broadcastMessage("§6§lOrion retreats! His Apostle takes the field!");
-        Bukkit.broadcastMessage("§cDefeat the Apostle to bring Orion back!");
-        
-        // 召唤使徒
-        plugin.summonApostle(retreatLocation);
-    }
-
-    public void returnFromRetreat() {
-        if (!hasRetreated) return;
-        
-        hasRetreated = false;
-        
-        // 恢复Orion
-        boss.setInvulnerable(false);
-        boss.setInvisible(false);
-        boss.setSilent(false);
-        boss.setAI(true);
-        boss.setGravity(true);
-        
-        // 回到战场
-        boss.teleport(retreatLocation);
-        
-        // 恢复保存的血量
-        if (savedHealth > 0) {
-            double newHealth = Math.min(savedHealth, boss.getMaxHealth());
-            boss.setHealth(newHealth);
-        }
-        
-        // 重新显示BossBar
-        plugin.showBossBarToAllPlayers();
-        
-        // 广播消息
-        Bukkit.broadcastMessage("§6§lOrion returns with renewed fury!");
-        if (comboManager != null) {
-            comboManager.resetComboCount();
-        }
+private void retreatAndSummonApostle() {
+    // 保存状态
+    savedHealth = boss.getHealth();
+    retreatLocation = boss.getLocation().clone();
+    hasRetreated = true;
+    hasSummonedApostle = true;
+    
+    // 使Orion消失（无敌+隐身+静默）
+    boss.setInvulnerable(true);  // 设置为无敌
+    boss.setInvisible(true);
+    boss.setSilent(true);
+    boss.setAI(false);
+    boss.setGravity(false);
+    boss.setNoDamageTicks(Integer.MAX_VALUE); // 添加额外保护
+    
+    // 传送到高空隐藏
+    boss.teleport(boss.getLocation().add(0, 100, 0));
+    
+    // 隐藏BossBar
+    plugin.hideBossBarFromAllPlayers();
+    
+    // 广播消息
+    Bukkit.broadcastMessage("§6§lOrion retreats! His Apostle takes the field!");
+    Bukkit.broadcastMessage("§cDefeat the Apostle to bring Orion back!");
+    
+    // 召唤使徒
+    plugin.summonApostle(retreatLocation);
+}
+public void returnFromRetreat() {
+    if (!hasRetreated) return;
+    
+    hasRetreated = false;
+    
+    // 恢复Orion
+    boss.setInvulnerable(false);  // 取消无敌状态
+    boss.setInvisible(false);
+    boss.setSilent(false);
+    boss.setAI(true);
+    boss.setGravity(true);
+    boss.setNoDamageTicks(0); // 重置伤害保护
+    
+    // 回到战场
+    boss.teleport(retreatLocation);
+    
+    // 恢复保存的血量
+    if (savedHealth > 0) {
+        double newHealth = Math.min(savedHealth, boss.getMaxHealth());
+        boss.setHealth(newHealth);
     }
     
+    // 重新显示BossBar
+    plugin.showBossBarToAllPlayers();
+    
+    // 广播消息
+    Bukkit.broadcastMessage("§6§lOrion returns with renewed fury!");
+    if (comboManager != null) {
+        comboManager.resetComboCount();
+    }
+}    
     // === 新增：获取管理器的方法 ===
     public OrionComboManager getComboManager() {
         return comboManager;
