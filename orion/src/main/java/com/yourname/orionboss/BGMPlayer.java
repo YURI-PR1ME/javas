@@ -21,10 +21,10 @@ public class BGMPlayer {
     // BGM曲目定义
     public enum BGMTrack {
         // 使用超大音量（例如200F），使每个玩家都能以自己为中心听到覆盖整个岛屿范围的音乐
-        ORION_PHASE_1("yourplugin:orion_phase1", 120, SoundCategory.MUSIC, 200.0f),
-        ORION_PHASE_2("yourplugin:orion_phase2", 120, SoundCategory.MUSIC, 200.0f),
-        APOSTLE("yourplugin:apostle_bgm", 180, SoundCategory.MUSIC, 200.0f),
-        FINAL_PHASE("yourplugin:final_phase", 150, SoundCategory.MUSIC, 200.0f);
+        ORION_PHASE_1("yourplugin:orion_phase1", 120, SoundCategory.MUSIC, 1200.0f),
+        ORION_PHASE_2("yourplugin:orion_phase2", 120, SoundCategory.MUSIC, 1200.0f),
+        APOSTLE("yourplugin:apostle_bgm", 180, SoundCategory.MUSIC, 1200.0f),
+        FINAL_PHASE("yourplugin:final_phase", 150, SoundCategory.MUSIC, 1200.0f);
         
         private final String soundName;
         private final int lengthSeconds;
