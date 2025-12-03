@@ -23,6 +23,11 @@ public class OrionBoss {
     // === 新增：连招和嘲讽管理器 ===
     private final OrionComboManager comboManager;
     private final TauntManager tauntManager;
+    
+    // === 新增：阶段标志 ===
+    private boolean isPhase2 = false;
+    private boolean isFinalPhase = false;
+    
     // 撤退相关字段
     private boolean hasRetreated = false;
     private boolean hasSummonedApostle = false;
@@ -93,6 +98,9 @@ public class OrionBoss {
                 // === 新增：检查距离并传送 ===
                 checkDistanceAndTeleport();
 
+                // === 新增：检查阶段转换 ===
+                checkPhaseTransition();
+
                 performComboAttack();
                 updateBossEffects();
                 plugin.updateBossBar(boss);
@@ -137,6 +145,31 @@ public class OrionBoss {
                 // 在冷却中，只传送不释放技能
                 Bukkit.broadcastMessage("§4§lOrion teleports to close the distance!");
             }
+        }
+    }
+
+    // === 阶段转换检查方法 ===
+    private void checkPhaseTransition() {
+        double healthPercent = boss.getHealth() / boss.getMaxHealth();
+        
+        if (healthPercent < 0.5 && !isPhase2) {
+            // 进入第二阶段
+            isPhase2 = true;
+            // 切换BGM到狂怒阶段
+            if (plugin.getBgmPlayer() != null) {
+                plugin.getBgmPlayer().updateBossPhase(BGMPlayer.BossPhase.ORION_RAGE);
+            }
+            Bukkit.broadcastMessage("§4§l猎户座进入狂怒状态！BGM切换！");
+        }
+        
+        if (healthPercent < 0.2 && !isFinalPhase) {
+            // 进入最终阶段
+            isFinalPhase = true;
+            // 切换BGM到最终阶段
+            if (plugin.getBgmPlayer() != null) {
+                plugin.getBgmPlayer().updateBossPhase(BGMPlayer.BossPhase.ORION_FINAL);
+            }
+            Bukkit.broadcastMessage("§4§l最终决战！猎户座垂死挣扎！");
         }
     }
 
@@ -1047,6 +1080,11 @@ public class OrionBoss {
         hasSummonedApostle = false;
         savedHealth = 0.0;
         retreatLocation = null;
+        
+        // 停止BGM
+        if (plugin != null) {
+            plugin.stopBossBGM();
+        }
     }
 
     public Wither getBoss() {

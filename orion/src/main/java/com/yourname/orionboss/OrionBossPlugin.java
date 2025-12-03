@@ -29,14 +29,19 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
     
     // 使徒相关字段
     private ApostleBoss activeApostle = null;
+    
+    // BGM 管理器
+    private BGMPlayer bgmPlayer;
 
     @Override
     public void onEnable() {
         treasureManager = new TreasureManager(this);
+        bgmPlayer = new BGMPlayer(this);  // 初始化BGM管理器
         
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new OrionBossListener(this), this);
         getServer().getPluginManager().registerEvents(new TreasureBagListener(this, treasureManager), this);
+        getServer().getPluginManager().registerEvents(new PlayerBGMListener(this), this);
         
         loadTreasureConfig();
         
@@ -55,6 +60,11 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         if (activeApostle != null) {
             activeApostle.cleanup();
             activeApostle = null;
+        }
+        
+        // 清理BGM
+        if (bgmPlayer != null) {
+            bgmPlayer.cleanup();
         }
         
         getLogger().info("OrionBossPlugin has been disabled!");
@@ -212,6 +222,9 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         createBossBar(boss);
         orionBoss.startBossBehavior();
         
+        // 启动BGM
+        startBossBGM();
+        
         // Broadcast message
         org.bukkit.Bukkit.broadcastMessage("§6§lORION §e§lTHE HUNTER §6§lhas been summoned in The End!");
         org.bukkit.Bukkit.broadcastMessage("§cPrepare for an epic battle!");
@@ -226,6 +239,11 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         activeApostle = new ApostleBoss(location, this);
         activeApostle.startFight();
         
+        // 切换为使徒BGM
+        if (bgmPlayer != null) {
+            bgmPlayer.updateBossPhase(BGMPlayer.BossPhase.APOSTLE);
+        }
+        
         // 注册使徒监听器
         getServer().getPluginManager().registerEvents(new ApostleListener(this), this);
     }
@@ -239,6 +257,11 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         // 恢复Orion战斗
         for (OrionBoss orionBoss : activeBosses.values()) {
             orionBoss.returnFromRetreat();
+        }
+        
+        // 切换回Orion第二阶段BGM
+        if (bgmPlayer != null) {
+            bgmPlayer.updateBossPhase(BGMPlayer.BossPhase.ORION_RAGE);
         }
         
         // 广播消息
@@ -370,5 +393,22 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
     
     public TreasureManager getTreasureManager() {
         return treasureManager;
+    }
+    
+    // BGM相关方法
+    public BGMPlayer getBgmPlayer() {
+        return bgmPlayer;
+    }
+    
+    public void startBossBGM() {
+        if (bgmPlayer != null) {
+            bgmPlayer.playBGMForAll(BGMPlayer.BossPhase.ORION_NORMAL);
+        }
+    }
+    
+    public void stopBossBGM() {
+        if (bgmPlayer != null) {
+            bgmPlayer.stopAllBGM();
+        }
     }
 }

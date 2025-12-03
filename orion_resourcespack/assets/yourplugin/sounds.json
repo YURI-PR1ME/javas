@@ -1,0 +1,29 @@
+  {
+	"orion_phase1": {
+		"subtitle": "orion killer",
+		"sounds": [
+			{
+				"name": "yourplugin:orion_phase1",
+				"stream": true
+			}
+		]
+	},
+	"orion_phase2": {
+		"subtitle": "orion killer",
+		"sounds": [
+			{
+				"name": "yourplugin:orion_phase2",
+				"stream": true
+			}
+		]
+	},
+	"final_phase": {
+		"subtitle": "orion killer",
+		"sounds": [
+			{
+				"name": "yourplugin:final_phase",
+				"stream": true
+			}
+		]
+	}
+}

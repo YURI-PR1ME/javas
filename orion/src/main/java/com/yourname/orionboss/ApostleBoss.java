@@ -57,7 +57,10 @@ public class ApostleBoss {
     public void startFight() {
         spawnPhaseOne();
         createBossBar();
-        startBehavior();
+ // 启动使徒BGM
+        if (plugin.getBgmPlayer() != null) {
+            plugin.getBgmPlayer().updateBossPhase(BGMPlayer.BossPhase.APOSTLE);
+        }       startBehavior();
     }
 
     private void spawnPhaseOne() {
