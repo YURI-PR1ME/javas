@@ -249,11 +249,18 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
     }
 
     public void onApostleDeath() {
-        if (activeApostle != null) {
-            activeApostle.cleanup();
-            activeApostle = null;
-        }
-        
+    if (activeApostle != null) {
+        activeApostle.cleanup();
+        activeApostle = null;
+    }
+    
+    // 确保BGM完全停止
+    if (bgmPlayer != null) {
+        bgmPlayer.stopAllBGM();
+    }
+    
+    // 短暂延迟后恢复Orion战斗和BGM
+    org.bukkit.Bukkit.getScheduler().runTaskLater(this, () -> {
         // 恢复Orion战斗
         for (OrionBoss orionBoss : activeBosses.values()) {
             orionBoss.returnFromRetreat();
@@ -266,8 +273,12 @@ public class OrionBossPlugin extends JavaPlugin implements Listener {
         
         // 广播消息
         org.bukkit.Bukkit.broadcastMessage("§6§lThe Apostle falls! Orion returns to finish the battle!");
-    }
-
+    }, 20L); // 延迟1秒确保BGM完全停止
+}
+// 在OrionBossPlugin类中添加这个方法
+public ApostleBoss getActiveApostle() {
+    return activeApostle;
+}
     // BossBar显示/隐藏方法
     public void hideBossBarFromAllPlayers() {
         for (BossBar bossBar : bossBars.values()) {

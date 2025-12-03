@@ -800,7 +800,9 @@ public class ApostleBoss {
 
         // 通知插件使徒死亡
         plugin.onApostleDeath();
-
+ if (plugin.getBgmPlayer() != null) {
+        plugin.getBgmPlayer().stopAllBGM();
+    }
         // 广播消息
         Bukkit.broadcastMessage("§6§lApostle has been defeated! Orion returns to battle!");
     }

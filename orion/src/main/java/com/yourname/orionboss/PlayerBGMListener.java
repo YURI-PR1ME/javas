@@ -19,12 +19,12 @@ public class PlayerBGMListener implements Listener {
         Player player = event.getPlayer();
         BGMPlayer bgmPlayer = plugin.getBgmPlayer();
         
-        if (bgmPlayer == null || !bgmPlayer.isPlaying()) return;
+        if (bgmPlayer == null) return;
         
         // 检查玩家是否从其他世界进入末地
         if (player.getWorld().getEnvironment() == org.bukkit.World.Environment.THE_END) {
-            // 玩家进入末地，播放BGM
-            bgmPlayer.playForNewEndPlayer(player);
+            // 玩家进入末地，播放BGM（如果正在播放）
+            bgmPlayer.onPlayerEnterEnd(player);
         } else if (event.getFrom().getEnvironment() == org.bukkit.World.Environment.THE_END) {
             // 玩家离开末地，停止BGM
             bgmPlayer.onPlayerLeaveEnd(player);

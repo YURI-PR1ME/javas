@@ -3,6 +3,7 @@ package com.yourname.orionboss;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.SoundCategory;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -13,12 +14,17 @@ public class BGMPlayer {
     private final OrionBossPlugin plugin;
     private BukkitRunnable globalBgmTask;
     
+    // 添加同步控制字段
+    private boolean isTransitioning = false; // 防止切换时的重叠
+    private final Object lock = new Object(); // 同步锁
+    
     // BGM曲目定义
     public enum BGMTrack {
-        ORION_PHASE_1("yourplugin:orion_phase1", 120, SoundCategory.VOICE, 1.0f),
-        ORION_PHASE_2("yourplugin:orion_phase2", 120, SoundCategory.VOICE, 1.0f),
-        APOSTLE("yourplugin:apostle_bgm", 180, SoundCategory.VOICE, 1.0f),
-        FINAL_PHASE("yourplugin:final_phase", 150, SoundCategory.VOICE, 1.2f);
+        // 使用超大音量（例如200F），使每个玩家都能以自己为中心听到覆盖整个岛屿范围的音乐
+        ORION_PHASE_1("yourplugin:orion_phase1", 120, SoundCategory.MUSIC, 200.0f),
+        ORION_PHASE_2("yourplugin:orion_phase2", 120, SoundCategory.MUSIC, 200.0f),
+        APOSTLE("yourplugin:apostle_bgm", 180, SoundCategory.MUSIC, 200.0f),
+        FINAL_PHASE("yourplugin:final_phase", 150, SoundCategory.MUSIC, 200.0f);
         
         private final String soundName;
         private final int lengthSeconds;
@@ -57,81 +63,128 @@ public class BGMPlayer {
     private BossPhase currentPhase = BossPhase.ORION_NORMAL;
     private boolean isPlaying = false;
     private String currentSoundName = "";
-    private Location lastSoundLocation = null;
     
     public BGMPlayer(OrionBossPlugin plugin) {
         this.plugin = plugin;
     }
     
     /**
-     * 为所有在末地的玩家播放BGM（全局播放）
+     * 为所有在末地的玩家播放BGM
      */
     public void playBGMForAll(BossPhase phase) {
-        stopAllBGM(); // 先停止当前播放
-        
-        currentPhase = phase;
-        isPlaying = true;
-        BGMTrack track = phase.getBgmTrack();
-        currentSoundName = track.getSoundName();
-        
-        // 获取Boss位置作为音源中心
-        Location bossLocation = getBossLocation();
-        if (bossLocation == null) {
-            // 如果没有Boss，使用默认位置
-            bossLocation = new Location(Bukkit.getWorlds().stream()
-                .filter(w -> w.getEnvironment() == org.bukkit.World.Environment.THE_END)
-                .findFirst()
-                .orElse(Bukkit.getWorlds().get(0)), 0, 65, 0);
-        }
-        
-        lastSoundLocation = bossLocation.clone();
-        
-        // 检查世界是否为末地
-        boolean isInEnd = bossLocation.getWorld().getEnvironment() == org.bukkit.World.Environment.THE_END;
-        
-        if (!isInEnd) {
-            // 如果不是末地，就不播放
-            return;
-        }
-        
-        // 为末地中的所有玩家播放BGM
-        playBGMForEndPlayers(track, bossLocation);
-        
-        // 创建循环播放任务
-        startGlobalBGMLoop(track, bossLocation);
-        
-        // 广播BGM开始
-        broadcastBGMStart(phase);
-    }
-    
-    /**
-     * 为末地中的所有玩家播放BGM
-     */
-    private void playBGMForEndPlayers(BGMTrack track, Location soundLocation) {
-        // 获取末地中的所有玩家
-        List<Player> endPlayers = getPlayersInEnd();
-        
-        // 为每个末地玩家播放BGM
-        for (Player player : endPlayers) {
-            playSoundForPlayer(player, track, soundLocation);
+        synchronized (lock) {
+            if (isTransitioning) {
+                plugin.getLogger().info("BGM正在切换中，跳过本次播放请求");
+                return;
+            }
+            
+            isTransitioning = true;
+            
+            // 先完全停止当前BGM
+            stopAllBGMInternal();
+            
+            // 短暂延迟确保完全停止
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                synchronized (lock) {
+                    currentPhase = phase;
+                    isPlaying = true;
+                    BGMTrack track = phase.getBgmTrack();
+                    currentSoundName = track.getSoundName();
+                    
+                    // 获取所有在末地的玩家
+                    List<Player> endPlayers = getPlayersInEnd();
+                    if (endPlayers.isEmpty()) {
+                        plugin.getLogger().info("没有玩家在末地，跳过BGM播放");
+                        isTransitioning = false;
+                        return;
+                    }
+                    
+                    // 为每个末地玩家播放BGM
+                    playBGMForPlayers(endPlayers, track);
+                    
+                    // 创建循环播放任务
+                    startGlobalBGMLoop(track);
+                    
+                    // 广播BGM开始
+                    broadcastBGMStart(phase);
+                    
+                    plugin.getLogger().info("开始播放BGM: " + track.getSoundName() + "，玩家数量: " + endPlayers.size());
+                    isTransitioning = false;
+                }
+            }, 10L); // 延迟0.5秒确保完全停止
         }
     }
     
     /**
-     * 为单个玩家播放声音
+     * 内部停止方法，不设置isTransitioning
      */
-    private void playSoundForPlayer(Player player, BGMTrack track, Location soundLocation) {
-        String command = String.format(
-            "playsound %s voice %s %f %f %f %f",
-            track.getSoundName(),
-            player.getName(),
-            soundLocation.getX(),
-            soundLocation.getY(),
-            soundLocation.getZ(),
-            track.getVolume() * 200 // 大音量确保全岛可听
-        );
+    private void stopAllBGMInternal() {
+        // 停止全局循环任务
+        if (globalBgmTask != null) {
+            globalBgmTask.cancel();
+            globalBgmTask = null;
+        }
         
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+        // 停止所有在线玩家的音乐（无论他们在哪个世界）
+        if (currentSoundName != null && !currentSoundName.isEmpty()) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                try {
+                    // 使用 stopSound 方法停止特定声音
+                    player.stopSound(currentSoundName);
+                } catch (Exception e) {
+                    plugin.getLogger().warning("停止玩家 " + player.getName() + " 的BGM时出错: " + e.getMessage());
+                }
+            }
+            
+            plugin.getLogger().info("已停止所有玩家的BGM: " + currentSoundName);
+        }
+        
+        // 清理状态
+        isPlaying = false;
+        currentSoundName = "";
+    }
+    
+    /**
+     * 停止所有玩家的BGM
+     */
+    public void stopAllBGM() {
+        synchronized (lock) {
+            stopAllBGMInternal();
+            
+            // 广播停止
+            Bukkit.broadcastMessage("§7[音乐] 战斗BGM已停止");
+            plugin.getLogger().info("BGM已停止");
+        }
+    }
+    
+    /**
+     * 使用 player.playSound() 为指定玩家列表播放BGM
+     */
+    private void playBGMForPlayers(List<Player> players, BGMTrack track) {
+        for (Player player : players) {
+            if (player.isOnline() && player.getWorld().getEnvironment() == World.Environment.THE_END) {
+                try {
+                    // 先停止可能正在播放的同一声音
+                    player.stopSound(track.getSoundName());
+                    
+                    // 延迟1tick再播放，确保停止生效
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        if (player.isOnline() && player.getWorld().getEnvironment() == World.Environment.THE_END) {
+                            player.playSound(
+                                player.getLocation(),     // 声源：玩家当前位置
+                                track.getSoundName(),     // 声音键
+                                track.getCategory(),      // 声音类别：音乐
+                                track.getVolume(),        // 超大音量（200F），确保覆盖范围
+                                1.0f                      // 音高
+                            );
+                        }
+                    }, 1L);
+                    
+                } catch (Exception e) {
+                    plugin.getLogger().warning("为玩家 " + player.getName() + " 播放BGM时出错: " + e.getMessage());
+                }
+            }
+        }
     }
     
     /**
@@ -140,7 +193,7 @@ public class BGMPlayer {
     private List<Player> getPlayersInEnd() {
         List<Player> endPlayers = new ArrayList<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.getWorld().getEnvironment() == org.bukkit.World.Environment.THE_END) {
+            if (player.getWorld().getEnvironment() == World.Environment.THE_END) {
                 endPlayers.add(player);
             }
         }
@@ -150,118 +203,78 @@ public class BGMPlayer {
     /**
      * 启动全局BGM循环播放
      */
-    private void startGlobalBGMLoop(BGMTrack track, Location soundSource) {
-        if (globalBgmTask != null) {
-            globalBgmTask.cancel();
-        }
-        
-        globalBgmTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!isPlaying) {
-                    cancel();
-                    return;
-                }
-                
-                // 检查声音源是否在末地
-                boolean isInEnd = soundSource.getWorld().getEnvironment() == org.bukkit.World.Environment.THE_END;
-                if (!isInEnd) {
-                    cancel();
-                    return;
-                }
-                
-                // 为末地中的所有玩家重新播放BGM
-                playBGMForEndPlayers(track, soundSource);
-            }
-        };
-        
-        // 在音乐长度后重新播放
-        globalBgmTask.runTaskTimer(plugin, track.getLengthSeconds() * 20L, track.getLengthSeconds() * 20L);
-    }
-    
-    /**
-     * 停止所有玩家的BGM
-     */
-    public void stopAllBGM() {
-        // 停止全局循环任务
+    private void startGlobalBGMLoop(BGMTrack track) {
         if (globalBgmTask != null) {
             globalBgmTask.cancel();
             globalBgmTask = null;
         }
         
-        // 停止所有玩家的音乐
-        if (currentSoundName != null && !currentSoundName.isEmpty()) {
-            // 为所有在线玩家停止音乐
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                String command = String.format("stopsound %s voice %s", player.getName(), currentSoundName);
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+        globalBgmTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                synchronized (lock) {
+                    if (!isPlaying || isTransitioning) {
+                        cancel();
+                        return;
+                    }
+                    
+                    // 检查是否有玩家在末地
+                    List<Player> endPlayers = getPlayersInEnd();
+                    if (endPlayers.isEmpty()) {
+                        plugin.getLogger().info("没有玩家在末地，暂停BGM循环");
+                        return;
+                    }
+                    
+                    // 为所有末地玩家重新播放BGM
+                    playBGMForPlayers(endPlayers, track);
+                    
+                    // 调试日志
+                    plugin.getLogger().fine("BGM循环播放中... 当前阶段: " + currentPhase + 
+                        ", 玩家数量: " + endPlayers.size());
+                }
             }
-        }
+        };
         
-        // 清理状态
-        isPlaying = false;
-        currentSoundName = "";
-        lastSoundLocation = null;
+        // 在音乐长度后重新播放
+        int delayTicks = track.getLengthSeconds() * 20;
+        globalBgmTask.runTaskTimer(plugin, delayTicks, delayTicks);
         
-        // 广播停止
-        Bukkit.broadcastMessage("§7[音乐] 战斗BGM已停止");
+        plugin.getLogger().info("BGM循环任务已启动，间隔: " + delayTicks + " ticks");
     }
     
     /**
      * 停止特定玩家的BGM
      */
     public void stopBGMForPlayer(Player player) {
-        // 停止特定玩家的音乐
-        if (currentSoundName != null && !currentSoundName.isEmpty()) {
-            String command = String.format("stopsound %s voice %s", player.getName(), currentSoundName);
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+        synchronized (lock) {
+            if (currentSoundName != null && !currentSoundName.isEmpty()) {
+                try {
+                    player.stopSound(currentSoundName);
+                    plugin.getLogger().info("停止玩家 " + player.getName() + " 的BGM");
+                } catch (Exception e) {
+                    plugin.getLogger().warning("停止玩家BGM时出错: " + e.getMessage());
+                }
+            }
+            
+            // 发送停止提示（可选）
+            player.sendMessage("§7[音乐] 战斗BGM已停止");
         }
-        
-        // 发送停止提示（可选）
-        player.sendMessage("§7[音乐] 战斗BGM已停止");
-    }
-    
-    /**
-     * 停止特定玩家的所有BGM
-     */
-    public void stopAllBGMForPlayer(Player player) {
-        // 停止玩家所有声音
-        String command = String.format("stopsound %s", player.getName());
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
     }
     
     /**
      * 更新Boss阶段和BGM
      */
     public void updateBossPhase(BossPhase newPhase) {
-        if (currentPhase == newPhase) return;
-        
-        currentPhase = newPhase;
-        
-        // 停止当前音乐
-        stopAllBGM();
-        
-        // 播放新阶段的音乐
-        playBGMForAll(newPhase);
-        
-        // 广播阶段切换
-        broadcastPhaseChange(newPhase);
-    }
-    
-    /**
-     * 获取Boss位置
-     */
-    private Location getBossLocation() {
-        // 检查Orion Boss
-        if (!plugin.getActiveBosses().isEmpty()) {
-            for (OrionBoss boss : plugin.getActiveBosses().values()) {
-                if (boss.getBoss() != null && !boss.getBoss().isDead()) {
-                    return boss.getBoss().getLocation();
-                }
-            }
+        synchronized (lock) {
+            if (currentPhase == newPhase) return;
+            
+            plugin.getLogger().info("BGM阶段切换: " + currentPhase + " -> " + newPhase);
+            
+            currentPhase = newPhase;
+            
+            // 停止当前音乐并播放新阶段的音乐
+            playBGMForAll(newPhase);
         }
-        
-        return null;
     }
     
     /**
@@ -287,75 +300,71 @@ public class BGMPlayer {
                 message = "§7[音乐] §a战斗BGM开始播放";
         }
         
-        Bukkit.broadcastMessage(message);
-    }
-    
-    /**
-     * 广播阶段切换
-     */
-    private void broadcastPhaseChange(BossPhase newPhase) {
-        String message;
-        
-        switch (newPhase) {
-            case ORION_RAGE:
-                message = "§7[音乐] §6BGM切换：猎户座进入第二阶段！";
-                break;
-            case APOSTLE:
-                message = "§7[音乐] §5BGM切换：使徒降临！";
-                break;
-            case ORION_FINAL:
-                message = "§7[音乐] §4BGM切换：最终决战开始！";
-                break;
-            default:
-                return;
+        // 只向末地玩家广播
+        for (Player player : getPlayersInEnd()) {
+            player.sendMessage(message);
         }
-        
-        Bukkit.broadcastMessage(message);
+        plugin.getLogger().info("BGM已播放: " + message);
     }
     
     /**
      * 获取当前播放状态
      */
     public boolean isPlaying() {
-        return isPlaying;
+        synchronized (lock) {
+            return isPlaying && !isTransitioning;
+        }
     }
     
     /**
      * 获取当前阶段
      */
     public BossPhase getCurrentPhase() {
-        return currentPhase;
+        synchronized (lock) {
+            return currentPhase;
+        }
     }
     
     /**
      * 清理资源
      */
     public void cleanup() {
-        stopAllBGM();
-    }
-    
-    /**
-     * 为新进入末地的玩家播放BGM
-     */
-    public void playForNewEndPlayer(Player player) {
-        if (isPlaying && isInEnd(player) && lastSoundLocation != null) {
-            // 为新玩家播放当前BGM
-            BGMTrack track = currentPhase.getBgmTrack();
-            playSoundForPlayer(player, track, lastSoundLocation);
+        synchronized (lock) {
+            stopAllBGM();
+            plugin.getLogger().info("BGM播放器已清理");
         }
-    }
-    
-    /**
-     * 检查玩家是否在末地
-     */
-    private boolean isInEnd(Player player) {
-        return player.getWorld().getEnvironment() == org.bukkit.World.Environment.THE_END;
     }
     
     /**
      * 当玩家离开末地时调用
      */
     public void onPlayerLeaveEnd(Player player) {
-        stopBGMForPlayer(player);
+        synchronized (lock) {
+            stopBGMForPlayer(player);
+            plugin.getLogger().info("玩家 " + player.getName() + " 离开末地，停止BGM");
+        }
+    }
+    
+    /**
+     * 当玩家进入末地时，如果BGM正在播放，为其单独播放
+     */
+    public void onPlayerEnterEnd(Player player) {
+        synchronized (lock) {
+            if (isPlaying && !isTransitioning) {
+                // 为新进入末地的玩家播放当前BGM
+                List<Player> singlePlayerList = Collections.singletonList(player);
+                playBGMForPlayers(singlePlayerList, currentPhase.getBgmTrack());
+                player.sendMessage("§7[音乐] 战斗BGM正在播放中...");
+            }
+        }
+    }
+    
+    /**
+     * 检查是否正在切换BGM
+     */
+    public boolean isTransitioning() {
+        synchronized (lock) {
+            return isTransitioning;
+        }
     }
 }
