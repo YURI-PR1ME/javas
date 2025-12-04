@@ -20,9 +20,9 @@ public class TyrantBGMPlayer {
     
     // BGM曲目定义
     public enum BGMTrack {
-        TYRANT_PHASE_1("yourplugin:tyrant_phase1", 140, SoundCategory.MASTER, 3200.0f),
-        TYRANT_PHASE_2("yourplugin:tyrant_phase2", 180, SoundCategory.MASTER, 3200.0f),
-        LOST_GHOST("yourplugin:lost_ghost", 140, SoundCategory.MASTER, 3200.0f);
+        TYRANT_PHASE_1("yourplugin:tyrant_phase1", 140, SoundCategory.MUSIC, 1000.0f),  // 调整为1000
+        TYRANT_PHASE_2("yourplugin:tyrant_phase2", 180, SoundCategory.MUSIC, 1000.0f),  // 调整为1000
+        LOST_GHOST("yourplugin:lost_ghost", 140, SoundCategory.MUSIC, 1000.0f);         // 调整为1000
         
         private final String soundName;
         private final int lengthSeconds;
@@ -66,7 +66,7 @@ public class TyrantBGMPlayer {
     }
     
     /**
-     * 为所有在暴君所在世界的玩家播放BGM
+     * 为所有在暴君所在世界的玩家播放BGM（简化版本）
      */
     public void playBGMForAll(BossPhase phase) {
         synchronized (lock) {
@@ -96,7 +96,7 @@ public class TyrantBGMPlayer {
                         return;
                     }
                     
-                    // 为每个玩家播放BGM
+                    // 为每个玩家播放BGM（直接在玩家位置播放）
                     playBGMForPlayers(bossWorldPlayers, track);
                     
                     // 创建循环播放任务
@@ -105,7 +105,9 @@ public class TyrantBGMPlayer {
                     // 广播BGM开始
                     broadcastBGMStart(phase);
                     
-                    plugin.getLogger().info("开始播放BGM: " + track.getSoundName() + "，玩家数量: " + bossWorldPlayers.size());
+                    plugin.getLogger().info("开始播放BGM: " + track.getSoundName() + 
+                            "，玩家数量: " + bossWorldPlayers.size() + 
+                            "，音量: " + track.getVolume());
                     isTransitioning = false;
                 }
             }, 10L); // 延迟0.5秒确保完全停止
@@ -135,7 +137,7 @@ public class TyrantBGMPlayer {
     }
     
     /**
-     * 完全停止玩家的声音，相当于/stopsound命令
+     * 完全停止玩家的声音
      */
     private void stopSoundCompletely(Player player) {
         try {
@@ -211,35 +213,51 @@ public class TyrantBGMPlayer {
     
     /**
      * 为指定玩家列表播放BGM
+     * 直接在玩家位置播放，使用超大音量
      */
-    private void playBGMForPlayers(List<Player> players, BGMTrack track) {
-        for (Player player : players) {
-            if (player.isOnline()) {
-                try {
-                    // 先完全停止可能正在播放的声音
-                    stopSoundCompletely(player);
-                    
-                    // 延迟1tick再播放，确保停止生效
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        if (player.isOnline()) {
-                            player.playSound(
-                                player.getLocation(),     // 声源：玩家当前位置
-                                track.getSoundName(),     // 声音键
-                                track.getCategory(),      // 声音类别：音乐
-                                track.getVolume(),        // 超大音量，确保覆盖范围
-                                1.0f                      // 音高
-                            );
-                        }
-                    }, 1L);
-                    
-                } catch (Exception e) {
-                    plugin.getLogger().warning("为玩家 " + player.getName() + " 播放BGM时出错: " + e.getMessage());
-                }
+private void playBGMForPlayers(List<Player> players, BGMTrack track) {
+    for (Player player : players) {
+        if (player.isOnline()) {
+            try {
+                // 先停止声音，避免叠加
+                player.stopSound(SoundCategory.MUSIC);
+                
+                // 延迟1tick确保停止生效
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (player.isOnline()) {
+                        // 方案1：使用实体作为声源（跟随玩家的核心方法）
+                        // 将声音绑定到玩家实体，声音会跟随玩家移动
+                        player.playSound(
+                            player,                  // 关键：将玩家自身作为声源实体
+                            track.getSoundName(),
+                            track.getCategory(),
+                            track.getVolume(),       // 建议调整为15.0f
+                            1.0f,
+                            0L                       // 种子参数，设为0即可
+                        );
+                        
+                        // 方案2：使用固定位置但超大音量（备选方案）
+                        // player.playSound(
+                        //     player.getLocation(),
+                        //     track.getSoundName(),
+                        //     track.getCategory(),
+                        //     track.getVolume(),   // 需要较大音量，如100.0f
+                        //     1.0f,
+                        //     0L
+                        // );
+                        
+                        plugin.getLogger().info("为玩家 " + player.getName() + 
+                            " 播放跟随式BGM: " + track.getSoundName() + 
+                            " (使用实体绑定模式)");
+                    }
+                }, 1L);
+                
+            } catch (Exception e) {
+                plugin.getLogger().warning("为玩家 " + player.getName() + " 播放BGM时出错: " + e.getMessage());
             }
         }
     }
-    
-    /**
+}    /**
      * 启动全局BGM循环播放
      */
     private void startGlobalBGMLoop(BGMTrack track) {
@@ -267,8 +285,7 @@ public class TyrantBGMPlayer {
                     // 为所有暴君世界玩家重新播放BGM
                     playBGMForPlayers(bossWorldPlayers, track);
                     
-                    // 调试日志
-                    plugin.getLogger().fine("暴君BGM循环播放中... 当前阶段: " + currentPhase + 
+                    plugin.getLogger().fine("BGM循环播放中... 当前阶段: " + currentPhase + 
                         ", 玩家数量: " + bossWorldPlayers.size());
                 }
             }
@@ -278,7 +295,7 @@ public class TyrantBGMPlayer {
         int delayTicks = track.getLengthSeconds() * 20;
         globalBgmTask.runTaskTimer(plugin, delayTicks, delayTicks);
         
-        plugin.getLogger().info("暴君BGM循环任务已启动，间隔: " + delayTicks + " ticks");
+        plugin.getLogger().info("BGM循环任务已启动，间隔: " + delayTicks + " ticks");
     }
     
     /**
@@ -394,6 +411,61 @@ public class TyrantBGMPlayer {
                     player.sendMessage("§7[音乐] 暴君战斗BGM正在播放中...");
                 }
             }
+        }
+    }
+    
+    /**
+     * 手动测试BGM效果
+     */
+    public void testBGM(Player player) {
+        if (isPlaying && !isTransitioning) {
+            // 测试当前BGM的播放效果
+            BGMTrack track = currentPhase.getBgmTrack();
+            
+            player.sendMessage("§e[测试] 播放BGM测试...");
+            player.sendMessage("§e[测试] 曲目: " + track.getSoundName());
+            player.sendMessage("§e[测试] 音量: " + track.getVolume());
+            
+            // 在玩家位置播放测试
+            stopSoundCompletely(player);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                player.playSound(
+                    player.getLocation(),
+                    track.getSoundName(),
+                    track.getCategory(),
+                    track.getVolume(),
+                    1.0f
+                );
+            }, 2L);
+        } else {
+            player.sendMessage("§c[测试] 当前没有BGM在播放");
+        }
+    }
+    
+    /**
+     * 调整BGM音量
+     */
+    public void adjustVolume(Player player, float newVolume) {
+        if (isPlaying && !isTransitioning) {
+            // 停止当前BGM
+            stopAllBGMInternal();
+            
+            // 延迟后重新播放，使用新音量
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                List<Player> players = getPlayersInBossWorld();
+                if (!players.isEmpty()) {
+                    for (Player p : players) {
+                        p.playSound(
+                            p.getLocation(),
+                            currentPhase.getBgmTrack().getSoundName(),
+                            SoundCategory.MUSIC,
+                            newVolume,
+                            1.0f
+                        );
+                    }
+                    player.sendMessage("§a[音乐] BGM音量已调整为: " + newVolume);
+                }
+            }, 10L);
         }
     }
     
