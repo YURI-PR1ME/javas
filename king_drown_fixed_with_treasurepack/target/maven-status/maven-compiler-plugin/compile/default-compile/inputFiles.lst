@@ -1,7 +1,9 @@
-/home/yuri/javaproject/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedKingManager.java
-/home/yuri/javaproject/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedKingCommand.java
-/home/yuri/javaproject/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedKingListener.java
-/home/yuri/javaproject/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedTreasureBagListener.java
-/home/yuri/javaproject/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedKingBoss.java
-/home/yuri/javaproject/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedTreasureManager.java
-/home/yuri/javaproject/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedKingPlugin.java
+/home/yuri/javascripts/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedBGMPlayer.java
+/home/yuri/javascripts/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedTreasureManager.java
+/home/yuri/javascripts/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedKingBoss.java
+/home/yuri/javascripts/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedTreasureBagListener.java
+/home/yuri/javascripts/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedKingPlugin.java
+/home/yuri/javascripts/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedBGMListener.java
+/home/yuri/javascripts/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedKingManager.java
+/home/yuri/javascripts/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedKingCommand.java
+/home/yuri/javascripts/king_drown_fixed_with_treasurepack/src/main/java/com/yourname/drownedking/DrownedKingListener.java

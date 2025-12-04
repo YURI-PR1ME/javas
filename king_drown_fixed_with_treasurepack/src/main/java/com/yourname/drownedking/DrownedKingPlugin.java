@@ -27,6 +27,7 @@ public class DrownedKingPlugin extends JavaPlugin {
     private YamlConfiguration dataConfig;
     private FileConfiguration treasureConfig;
     private File treasureFile;
+    private DrownedBGMPlayer bgmPlayer; // 新增：BGM播放器字段
     
     @Override
     public void onEnable() {
@@ -61,6 +62,9 @@ public class DrownedKingPlugin extends JavaPlugin {
         this.drownedKingManager = new DrownedKingManager(this);
         this.treasureManager = new DrownedTreasureManager(this);
         
+        // ==================== 新增：初始化BGM播放器 ====================
+        this.bgmPlayer = new DrownedBGMPlayer(this);
+        
         try {
             this.getCommand("drownedking").setExecutor(new DrownedKingCommand(this));
         } catch (Exception e) {
@@ -71,6 +75,8 @@ public class DrownedKingPlugin extends JavaPlugin {
             Bukkit.getPluginManager().registerEvents(new DrownedKingListener(this), this);
             // 注册宝藏袋监听器
             Bukkit.getPluginManager().registerEvents(new DrownedTreasureBagListener(this, treasureManager), this);
+            // ==================== 新增：注册BGM监听器 ====================
+            Bukkit.getPluginManager().registerEvents(new DrownedBGMListener(this), this);
         } catch (Exception e) {
             getLogger().warning("Failed to register listeners: " + e.getMessage());
         }
@@ -85,6 +91,12 @@ public class DrownedKingPlugin extends JavaPlugin {
         if (drownedKingManager != null) {
             drownedKingManager.saveAllBosses();
         }
+        
+        // ==================== 新增：清理BGM播放器 ====================
+        if (bgmPlayer != null) {
+            bgmPlayer.cleanup();
+        }
+        
         getLogger().info("溺尸王Boss插件已禁用!");
     }
     
@@ -98,6 +110,11 @@ public class DrownedKingPlugin extends JavaPlugin {
     
     public DrownedTreasureManager getTreasureManager() {
         return treasureManager;
+    }
+    
+    // ==================== 新增：获取BGM播放器的方法 ====================
+    public DrownedBGMPlayer getBgmPlayer() {
+        return bgmPlayer;
     }
     
     private void setupDataFile() {

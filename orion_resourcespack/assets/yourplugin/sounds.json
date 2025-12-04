@@ -61,5 +61,23 @@
 				"stream": true
 			}
 		]
+	},
+	"drowned_phase1": {
+		"subtitle": "drowned",
+		"sounds": [
+			{
+				"name": "yourplugin:drowned_phase1",
+				"stream": true
+			}
+		]
+	},
+	"drowned_frenzy": {
+		"subtitle": "festival",
+		"sounds": [
+			{
+				"name": "yourplugin:drowned_frenzy",
+				"stream": true
+			}
+		]
 	}
 }

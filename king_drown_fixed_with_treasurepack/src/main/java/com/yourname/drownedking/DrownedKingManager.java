@@ -110,6 +110,11 @@ public class DrownedKingManager {
             }
             
             saveBoss(bossData);
+             // ============ 开始播放第一阶段BGM ============
+        // 注意：这行代码必须在 return true; 之前
+        if (plugin.getBgmPlayer() != null) {
+            plugin.getBgmPlayer().playBGMForAll(DrownedBGMPlayer.BossPhase.DROWNED_NORMAL);
+        }
             return true;
             
         } catch (Exception e) {
@@ -619,7 +624,11 @@ public class DrownedKingManager {
         
         // 设置狂欢节状态
         bossData.setInTridentFrenzy(true);
-        
+       // 在 tridentFrenzy 方法开头，设置狂欢节状态后添加：
+// 切换到狂欢节BGM
+if (plugin.getBgmPlayer() != null) {
+    plugin.getBgmPlayer().updateBossPhase(DrownedBGMPlayer.BossPhase.DROWNED_FRENZY);
+} 
         Bukkit.broadcastMessage("§4⚡ 溺尸王 §c开始了三叉戟狂欢节! 这将持续到它死亡!");
         
         Location bossLoc = boss.getLocation();
@@ -978,7 +987,10 @@ private boolean isSafeLocationAtHeight(Location location, double targetY) {
             String message = plugin.getConfig().getString("messages.death", 
                 "§4溺尸王 §c已被击败! 世界恢复了平静。");
             Bukkit.broadcastMessage(message);
-            
+            // 停止BGM
+if (plugin.getBgmPlayer() != null) {
+    plugin.getBgmPlayer().stopAllBGM();
+}
             // 给予奖励
             giveRewards(boss);
             
@@ -1230,7 +1242,11 @@ private boolean isSafeLocationAtHeight(Location location, double targetY) {
             if (message != null) {
                 Bukkit.broadcastMessage(message);
             }
-            
+            // 同样在 forceRemoveBoss 方法中，广播退场消息后添加：
+// 停止BGM
+if (plugin.getBgmPlayer() != null) {
+    plugin.getBgmPlayer().stopAllBGM();
+}
             // 移除Boss实体
             if (boss.isValid() && !boss.isDead()) {
                 boss.remove();
