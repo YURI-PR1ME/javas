@@ -20,9 +20,9 @@ public class TyrantBGMPlayer {
     
     // BGM曲目定义
     public enum BGMTrack {
-        TYRANT_PHASE_1("yourplugin:tyrant_phase1", 120, SoundCategory.MUSIC, 1200.0f),
-        TYRANT_PHASE_2("yourplugin:tyrant_phase2", 120, SoundCategory.MUSIC, 1200.0f),
-        LOST_GHOST("yourplugin:lost_ghost", 120, SoundCategory.MUSIC, 1200.0f);
+        TYRANT_PHASE_1("yourplugin:tyrant_phase1", 140, SoundCategory.MASTER, 3200.0f),
+        TYRANT_PHASE_2("yourplugin:tyrant_phase2", 180, SoundCategory.MASTER, 3200.0f),
+        LOST_GHOST("yourplugin:lost_ghost", 140, SoundCategory.MASTER, 3200.0f);
         
         private final String soundName;
         private final int lengthSeconds;
@@ -314,16 +314,16 @@ public class TyrantBGMPlayer {
         
         switch (phase) {
             case TYRANT_NORMAL:
-                message = "§7[音乐] §6暴君降临，准备迎接审判！";
+                message = "§7[音乐] §6DEAD GOD";
                 break;
             case TYRANT_RAGE:
-                message = "§7[音乐] §c暴君暴怒，毁灭即将来临！";
+                message = "§7[音乐] §cANGER OF NETHER";
                 break;
             case GHOST_PHASE:
-                message = "§7[音乐] §5暴君残魂，怨念不散！";
+                message = "§7[音乐] §5LOST GHOST";
                 break;
             default:
-                message = "§7[音乐] §a暴君战斗开始！";
+                message = "§7[音乐] §aONE MORE STEP";
         }
         
         // 只向暴君所在世界的玩家广播
