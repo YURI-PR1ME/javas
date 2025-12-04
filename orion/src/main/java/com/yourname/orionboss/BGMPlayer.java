@@ -20,7 +20,7 @@ public class BGMPlayer {
     
     // BGM曲目定义
     public enum BGMTrack {
-        // 使用超大音量（例如200F），使每个玩家都能以自己为中心听到覆盖整个岛屿范围的音乐
+        // 使用实体绑定播放后，音量可适当调低，因为不需要用超大音量覆盖距离
         ORION_PHASE_1("yourplugin:orion_phase1", 120, SoundCategory.MUSIC, 1200.0f),
         ORION_PHASE_2("yourplugin:orion_phase2", 120, SoundCategory.MUSIC, 1200.0f),
         APOSTLE("yourplugin:apostle_bgm", 180, SoundCategory.MUSIC, 1200.0f),
@@ -178,6 +178,7 @@ public class BGMPlayer {
     
     /**
      * 使用 player.playSound() 为指定玩家列表播放BGM
+     * 关键修改：使用实体绑定播放，将声音绑定到玩家自身，实现跟随效果
      */
     private void playBGMForPlayers(List<Player> players, BGMTrack track) {
         for (Player player : players) {
@@ -189,13 +190,20 @@ public class BGMPlayer {
                     // 延迟1tick再播放，确保停止生效
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         if (player.isOnline() && player.getWorld().getEnvironment() == World.Environment.THE_END) {
+                            // 关键修改：将声音绑定到玩家实体，实现跟随播放
+                            // 使用 player 作为声源实体，声音会跟随玩家移动
                             player.playSound(
-                                player.getLocation(),     // 声源：玩家当前位置
-                                track.getSoundName(),     // 声音键
-                                track.getCategory(),      // 声音类别：音乐
-                                track.getVolume(),        // 超大音量（200F），确保覆盖范围
-                                1.0f                      // 音高
+                                player,                  // 声源：玩家实体自身（核心修改）
+                                track.getSoundName(),   // 声音键
+                                track.getCategory(),    // 声音类别：音乐
+                                track.getVolume(),      // 音量（实体绑定后，音量效果更稳定）
+                                1.0f,                   // 音高
+                                0L                      // 种子参数
                             );
+                            
+                            // 调试日志
+                            plugin.getLogger().fine("为玩家 " + player.getName() + 
+                                " 播放跟随式BGM: " + track.getSoundName());
                         }
                     }, 1L);
                     
