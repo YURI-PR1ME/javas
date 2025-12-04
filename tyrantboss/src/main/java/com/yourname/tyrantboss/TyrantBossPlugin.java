@@ -39,17 +39,22 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
     private FileConfiguration treasureConfig;
     private File treasureFile;
     private TreasureManager treasureManager;
+    // === 新增：BGM播放器 ===
+    private TyrantBGMPlayer bgmPlayer;
 
     @Override
     public void onEnable() {
         bossManager = new TyrantBossManager(this);
         treasureManager = new TreasureManager(this);
         
+        // === 新增：初始化BGM播放器 ===
+        bgmPlayer = new TyrantBGMPlayer(this);
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(bossManager, this);
         
         getServer().getPluginManager().registerEvents(new TreasureBagListener(this, treasureManager), this);
-        
+         // === 新增：注册BGM监听器 ===
+        getServer().getPluginManager().registerEvents(new TyrantBGMListener(this), this);
         loadTreasureConfig();
         
         getLogger().info("TyrantBossPlugin 已启用!");
@@ -66,7 +71,10 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             ghostBoss.cleanup();
         }
         activeGhostBosses.clear();
-        
+        // === 新增：清理BGM播放器 ===
+        if (bgmPlayer != null) {
+            bgmPlayer.cleanup();
+        }
         bossBars.clear();
         getLogger().info("TyrantBossPlugin 已禁用!");
     }
@@ -209,8 +217,27 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         createBossBar(boss);
         
         tyrantBoss.startBossBehavior();
+         // === 新增：开始播放第一阶段BGM ===
+        if (bgmPlayer != null) {
+            bgmPlayer.playBGMForAll(TyrantBGMPlayer.BossPhase.TYRANT_NORMAL);
+        }
     }
-
+    // === 新增：BGM相关方法 ===
+    public TyrantBGMPlayer getBgmPlayer() {
+        return bgmPlayer;
+    }
+    
+    public void startBossBGM() {
+        if (bgmPlayer != null) {
+            bgmPlayer.playBGMForAll(TyrantBGMPlayer.BossPhase.TYRANT_NORMAL);
+        }
+    }
+    
+    public void stopBossBGM() {
+        if (bgmPlayer != null) {
+            bgmPlayer.stopAllBGM();
+        }
+    }
     private void setupBossAttributes(WitherSkeleton boss) {
         boss.setCustomName("§6§l暴君 §c§lTyrant");
         boss.setCustomNameVisible(true);
@@ -436,6 +463,10 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             event.setDroppedExp(0);
             
             createTreasureBag(ghost.getLocation());
+             // === 新增：残魂死亡时停止BGM ===
+            if (bgmPlayer != null) {
+                bgmPlayer.stopAllBGM();
+            }
             
             Bukkit.broadcastMessage("§6§l暴君残魂已被彻底消灭! §e荣耀归于勇者们!");
             Bukkit.broadcastMessage("§6§l暴君宝藏袋已掉落! §e快去收集战利品吧!");

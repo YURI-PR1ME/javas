@@ -176,6 +176,10 @@ public class TyrantBoss {
         boss.getWorld().spawnParticle(Particle.FLAME, boss.getLocation(), 100, 3, 3, 3);
         
         Objects.requireNonNull(boss.getAttribute(Attribute.MOVEMENT_SPEED)).setBaseValue(0.5);
+         // === 新增：切换BGM到第二阶段 ===
+    if (plugin.getBgmPlayer() != null) {
+        plugin.getBgmPlayer().updateBossPhase(TyrantBGMPlayer.BossPhase.TYRANT_RAGE);
+    }
         
         Bukkit.broadcastMessage("§c§l暴君进入狂暴阶段! 机动性提升! 传送和骷髅头攻击更加频繁!");
     }
@@ -656,6 +660,11 @@ public class TyrantBoss {
         isInvulnerable = false;
         isUsingUltimate = false;
         shouldDieAfterUltimate = false;
+         // === 新增：停止BGM ===
+    if (plugin != null && plugin.getBgmPlayer() != null) {
+        // 注意：这里不停止BGM，因为暴君死亡后会变成残魂，残魂需要继续播放BGM
+        // BGM会在残魂死亡时停止
+    }
     }
 
     public WitherSkeleton getBoss() {

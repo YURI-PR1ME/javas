@@ -43,8 +43,11 @@ public class TyrantGhostBoss {
             }
         };
         behaviorTask.runTaskTimer(plugin, 0L, 20L);
-    }
-
+    
+    // === 新增：播放残魂阶段BGM ===
+    if (plugin.getBgmPlayer() != null) {
+        plugin.getBgmPlayer().updateBossPhase(TyrantBGMPlayer.BossPhase.GHOST_PHASE);
+    }}
     private void performRandomAbility() {
         long currentTime = System.currentTimeMillis();
         Player target = findNearestPlayer();
@@ -205,6 +208,10 @@ public class TyrantGhostBoss {
         if (behaviorTask != null) {
             behaviorTask.cancel();
         }
+        // === 新增：停止BGM ===
+    if (plugin != null && plugin.getBgmPlayer() != null) {
+        plugin.getBgmPlayer().stopAllBGM();
+    }
     }
 
     public Ghast getGhost() {
