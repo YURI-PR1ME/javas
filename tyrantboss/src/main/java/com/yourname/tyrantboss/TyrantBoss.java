@@ -109,7 +109,7 @@ public class TyrantBoss {
         boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.7f);
         boss.getWorld().spawnParticle(Particle.LAVA, boss.getLocation(), 50, 3, 3, 3);
         
-        Bukkit.broadcastMessage("§4§l暴君暴怒了! 5秒内未攻击到目标，释放全方位毁灭攻击!");
+        Bukkit.broadcastMessage("§4§l无法和SUN相提并论的实力！杀死你只会玷污我的武器！");
         
         useOmnidirectionalSkullAttack();
         
@@ -181,7 +181,7 @@ public class TyrantBoss {
         plugin.getBgmPlayer().updateBossPhase(TyrantBGMPlayer.BossPhase.TYRANT_RAGE);
     }
         
-        Bukkit.broadcastMessage("§c§l暴君进入狂暴阶段! 机动性提升! 传送和骷髅头攻击更加频繁!");
+        Bukkit.broadcastMessage("§c§l有两下子，但是「太平洋之风」还是我的!");
     }
 
     private void enterFinalPhase() {
@@ -191,7 +191,7 @@ public class TyrantBoss {
         
         useUltimateAbility();
         
-        Bukkit.broadcastMessage("§4§l暴君进入终焉阶段! 释放最终毁灭技能!");
+        Bukkit.broadcastMessage("§4§l没有什么能挽回了...");
     }
 
     private void performRandomAbility() {
@@ -234,7 +234,7 @@ public class TyrantBoss {
         boss.getWorld().spawnParticle(Particle.PORTAL, behindPlayer, 50);
         
         target.setVelocity(new Vector(0, 1.5, 0));
-        target.sendTitle("§c§l暴君闪现!", "§e你被击飞了!", 10, 40, 10);
+        //target.sendTitle("§c§l暴君闪现!", "§e你被击飞了!", 10, 40, 10);
         
         boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
         
@@ -250,7 +250,7 @@ public class TyrantBoss {
         for (Player player : getNearbyPlayers(3)) {
             if (isValidTarget(player)) {
                 player.damage(8.0, boss);
-                player.sendMessage("§c暴君传送后引发了爆炸!");
+                player.sendMessage("§c你会受到更多拷打的!");
             }
         }
     }
@@ -302,7 +302,7 @@ public class TyrantBoss {
         }
         
         boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 2.0f, 0.8f);
-        Bukkit.broadcastMessage("§6暴君召唤了骷髅军团! 小心骷髅射手和凋零护卫!");
+        Bukkit.broadcastMessage("§6加入他们的一员吧，和SUN那家伙一样！");
     }
 
     private void useRapidDisplacementAbility() {
@@ -379,7 +379,7 @@ public class TyrantBoss {
         boss.getWorld().playSound(boss.getLocation(), Sound.ENTITY_WITHER_SHOOT, 1.5f, 0.8f);
         
         if (target != null) {
-            target.sendMessage("§4暴君向你发射了追踪凋零骷髅头!");
+            target.sendMessage("§4你，SUN都会服从于我，至少你们的灵魂会!");
         }
     }
 
@@ -401,9 +401,9 @@ public class TyrantBoss {
         Location bossLocation = boss.getLocation();
         
         if (shouldDieAfterUltimate) {
-            Bukkit.broadcastMessage("§4§l暴君在濒死前释放了终极技能! 进入无敌状态!");
+            Bukkit.broadcastMessage("§4§l你...你是个意外...但是也许你可以阻止那个没有灵魂和血肉的家伙.....");
         } else {
-            Bukkit.broadcastMessage("§4§l暴君释放终极技能，进入无敌状态!");
+            Bukkit.broadcastMessage("§4§l带着你无价值的灵魂安息吧！");
         }
         
         clearBlocksAboveBoss(bossLocation);
@@ -426,7 +426,7 @@ public class TyrantBoss {
                             }
                         }.runTaskLater(plugin, 20L);
                     } else {
-                        Bukkit.broadcastMessage("§6§l暴君的无敌状态结束!");
+                        Bukkit.broadcastMessage("§6§l现在，再次面对无尽的凋零吧！");
                     }
                     cancel();
                     return;
@@ -567,7 +567,7 @@ public class TyrantBoss {
         for (Player player : getNearbyPlayers(5)) {
             if (isValidTarget(player)) {
                 player.damage(10.0, boss);
-                player.sendMessage("§c暴君的镐子引发了爆炸!");
+                player.sendMessage("§c尝尝GARGANTUA的招数!");
             }
         }
     }

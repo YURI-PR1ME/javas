@@ -101,7 +101,7 @@ public class DrownedKingManager {
             
             // 广播消息
             String message = plugin.getConfig().getString("messages.spawn", 
-                "§4⚡ 溺尸王 §c从深渊中苏醒§4! 所有玩家小心!");
+                "§4你呼唤了我....你也是LUNAR的同袍吗....");
             Bukkit.broadcastMessage(message);
             
             // 播放音效
@@ -124,7 +124,7 @@ public class DrownedKingManager {
     }
     
     private void setupBossAttributes(Drowned boss) {
-        boss.setCustomName("§4溺尸王 §c(深渊主宰)");
+        boss.setCustomName("§4溺尸王 §c(旧日之神)");
         boss.setCustomNameVisible(true);
         
         // 基础属性
@@ -464,18 +464,18 @@ public class DrownedKingManager {
             double damage = 14 + (Math.random() * 11); // 14到25之间的随机数
             target.damage(damage, boss);
             
-            target.sendMessage("§c⚡ 你被溺尸王的雷电击中! 受到 " + String.format("%.1f", damage) + " 点伤害!");
+            //target.sendMessage("§c⚡ 你被溺尸王的雷电击中! 受到 " + String.format("%.1f", damage) + " 点伤害!");
             
             // 增加电涌攻击计数 - 雷电攻击也计入
             DrownedKingBoss bossData = activeBosses.get(bossId);
             if (bossData != null) {
                 bossData.incrementSurgeAttackCount();
                 // 调试信息
-                boss.sendMessage("§e[DEBUG] 雷电攻击，电涌计数: " + bossData.getSurgeAttackCount());
+                //boss.sendMessage("§e[DEBUG] 雷电攻击，电涌计数: " + bossData.getSurgeAttackCount());
             }
         }
         
-        Bukkit.broadcastMessage("§4溺尸王 §c召唤了雷电风暴!");
+        Bukkit.broadcastMessage("§4你也来感受一下旧日的闪电吧....");
     }
     
     private void summonMinions(Drowned boss, UUID bossId) {
@@ -512,7 +512,7 @@ public class DrownedKingManager {
             }
         }
         
-        Bukkit.broadcastMessage("§4溺尸王 §c召唤了溺尸守卫!");
+        Bukkit.broadcastMessage("§4溺尸王:守住，我会去太平洋....引爆...");
     }
     
     // 新增方法：在Boss附近且同高度寻找生成位置
@@ -607,13 +607,13 @@ public class DrownedKingManager {
             double damage = 14 + (Math.random() * 11); // 14到25之间的随机数
             player.damage(damage, boss);
             
-            player.sendMessage("§c💥 你被溺尸王的冲击波击中! 受到 " + String.format("%.1f", damage) + " 点伤害!");
+           // player.sendMessage("§c💥 你被溺尸王的冲击波击中! 受到 " + String.format("%.1f", damage) + " 点伤害!");
         }
         
         // 粒子效果
         bossLoc.getWorld().spawnParticle(org.bukkit.Particle.EXPLOSION, bossLoc, 10);
         
-        Bukkit.broadcastMessage("§4溺尸王 §c释放了冲击波!");
+        Bukkit.broadcastMessage("§4溺尸王:向神明屈服！");
     }
     
     private void tridentFrenzy(Drowned boss, UUID bossId) {
@@ -629,7 +629,7 @@ public class DrownedKingManager {
 if (plugin.getBgmPlayer() != null) {
     plugin.getBgmPlayer().updateBossPhase(DrownedBGMPlayer.BossPhase.DROWNED_FRENZY);
 } 
-        Bukkit.broadcastMessage("§4⚡ 溺尸王 §c开始了三叉戟狂欢节! 这将持续到它死亡!");
+        Bukkit.broadcastMessage("§4⚡ 溺尸王 §c开始了三叉戟狂欢节! !");
         
         Location bossLoc = boss.getLocation();
         
@@ -696,12 +696,12 @@ if (plugin.getBgmPlayer() != null) {
                 counter++;
                 if (counter % 2 == 0) { // 每两次执行，即20秒
                     summonMinions(boss, bossId);
-                    Bukkit.broadcastMessage("§4溺尸王 §c在狂欢节中召唤了更多守卫!");
+                    Bukkit.broadcastMessage("§4你们全都给我爬起来，和我一起战斗！");
                 }
                 
                 // 更新Boss血条显示狂欢节状态
                 if (bossData != null) {
-                    bossData.getBossBar().setTitle("§4⚡ 溺尸王 §c(狂欢节状态)");
+                    bossData.getBossBar().setTitle("§4⚡ 溺尸王 §c(SUN)");
                 }
             }
         };
@@ -757,7 +757,7 @@ if (plugin.getBgmPlayer() != null) {
                     damage *= damageMultiplier;
                     
                     player.damage(damage, boss);
-                    player.sendMessage("§c💥 你被三叉戟连锁爆炸击中! 受到 " + String.format("%.1f", damage) + " 点伤害!");
+                   // player.sendMessage("§c💥 你被三叉戟连锁爆炸击中! 受到 " + String.format("%.1f", damage) + " 点伤害!");
                 }
             }
             
@@ -779,7 +779,7 @@ if (plugin.getBgmPlayer() != null) {
         }
         
         if (explodedCount > 0) {
-            String message = "§4⚡ 溺尸王 §c的狂欢节引爆了 " + explodedCount + " 个地上的三叉戟!";
+            String message = "§4⚡ 溺尸王:现在有 " + explodedCount + " 个三叉戟可以要你的命！";
             if (!blockDamage) {
                 message += " §7(地形保护已启用)";
             }
@@ -823,13 +823,13 @@ if (plugin.getBgmPlayer() != null) {
     
     if (newLocation != null) {
         boss.teleport(newLocation);
-        Bukkit.broadcastMessage("§4溺尸王 §c传送到了 " + target.getName() + " 附近!");
+        Bukkit.broadcastMessage(" " + target.getName() + " 别想着跑！");
     } else {
         // 如果找不到同高度位置，使用备用方法
         Location backupLocation = findSpawnLocation(target.getLocation(), 10, 20);
         if (backupLocation != null) {
             boss.teleport(backupLocation);
-            Bukkit.broadcastMessage("§4溺尸王 §c传送到了 " + target.getName() + " 附近!");
+            Bukkit.broadcastMessage(" " + target.getName() + " 別想着跑！");
         }
     }
 } 
@@ -985,7 +985,7 @@ private boolean isSafeLocationAtHeight(Location location, double targetY) {
             
             // 广播消息
             String message = plugin.getConfig().getString("messages.death", 
-                "§4溺尸王 §c已被击败! 世界恢复了平静。");
+                "§4远古的声音：事情开始变化了....LUNAR....这些自然的造物终究超越神明.....");
             Bukkit.broadcastMessage(message);
             // 停止BGM
 if (plugin.getBgmPlayer() != null) {
@@ -1146,11 +1146,11 @@ if (plugin.getBgmPlayer() != null) {
     private void sendTauntMessage(Drowned boss, String playerName) {
         // 嘲笑消息列表
         List<String> tauntMessages = Arrays.asList(
-            "§4溺尸王 §c大笑着: §f\"渺小的" + playerName + "，这就是挑战深渊主宰的下场!\"",
-            "§4溺尸王 §c嘲讽道: §f\"" + playerName + "，你的力量在深渊面前不堪一击!\"",
-            "§4溺尸王 §c轻蔑地说: §f\"又一个不自量力的挑战者，" + playerName + "，你的灵魂将永沉海底!\"",
+            "§4溺尸王 §c低于: §f\"渺小的" + playerName + "，你终究...不是神！\"",
+            "§4溺尸王 §c嘲讽道: §f\"" + playerName + "，你的力量在神明面前不堪一击!\"",
+            "§4溺尸王 §c轻蔑地说: §f\"主世界自然诞生的失败品，" + playerName + "，你的灵魂将永沉深渊!\"",
             "§4溺尸王 §c狂笑道: §f\"" + playerName + "，你的失败只会让我更加强大!\"",
-            "§4溺尸王 §c嗤笑道: §f\"这就是所谓的勇士吗，" + playerName + "？太让我失望了!\""
+            "§4溺尸王 §c嗤笑道: §f\"这就是所谓自然的造物吗，" + playerName + "？太让我失望了!\""
         );
         
         Random random = new Random();
@@ -1170,8 +1170,8 @@ if (plugin.getBgmPlayer() != null) {
     private void handleBossRetreatAfterKill(Drowned boss, UUID bossId, String playerName) {
         // 终极嘲笑消息列表
         List<String> finalTauntMessages = Arrays.asList(
-            "§4溺尸王 §c狂笑着: §f\"" + playerName + "，你已经死了两次! 深渊不再对你感兴趣!\"",
-            "§4溺尸王 §c轻蔑地说: §f\"连死两次，" + playerName + "，你连作为猎物的资格都没有了!\"",
+            "§4溺尸王 §c狂笑着: §f\"" + playerName + "，两次机会都无法触碰胜利! 你只能回到LUNAR的流放之地了!\"",
+            "§4溺尸王 §c轻蔑地说: §f\"两次重生，" + playerName + "，你连作为对手的资格都没有了!\"",
             "§4溺尸王 §c嘲讽道: §f\"" + playerName + "，你的无能让我感到无聊! 深渊不欢迎弱者!\"",
             "§4溺尸王 §c嗤笑道: §f\"两次死亡，" + playerName + "？你连让我认真的资格都没有!\"",
             "§4溺尸王 §c大笑着: §f\"" + playerName + "，你的灵魂已经腐朽! 不值得我再浪费时间!\""
@@ -1182,7 +1182,7 @@ if (plugin.getBgmPlayer() != null) {
         
         // 广播终极嘲笑消息
         Bukkit.broadcastMessage(finalTauntMessage);
-        Bukkit.broadcastMessage("§4⚡ 溺尸王 §c对重复的杀戮感到厌倦，准备退回深渊...");
+        Bukkit.broadcastMessage("§4⚡ SUN 的力量收敛....随着四周的气息消散了....");
         
         // 播放嘲笑音效
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
@@ -1203,7 +1203,7 @@ if (plugin.getBgmPlayer() != null) {
             }
             
             // 移除Boss
-            forceRemoveBoss(boss, bossId, "§4溺尸王 §c在对 " + playerName + " 的嘲笑声中退回了深渊...");
+            forceRemoveBoss(boss, bossId, "§4溺尸王 : §c" + playerName + " 终究不及神明，这就是自然的上限了...");
         }, 60L); // 3秒后退场
     }
     

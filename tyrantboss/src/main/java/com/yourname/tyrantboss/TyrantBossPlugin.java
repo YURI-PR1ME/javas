@@ -445,7 +445,7 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             
             spawnTyrantGhost(boss.getLocation());
             
-            Bukkit.broadcastMessage("§6§l暴君已被击败! 但它的残魂依然存在! §5小心暴君残魂的轰炸和龙息!");
+            Bukkit.broadcastMessage("§6§l无法弥补的过错......我也到达这里了......");
         } else if (activeGhostBosses.containsKey(event.getEntity().getUniqueId())) {
             Ghast ghost = (Ghast) event.getEntity();
             TyrantGhostBoss ghostBoss = activeGhostBosses.remove(ghost.getUniqueId());
@@ -468,8 +468,8 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
                 bgmPlayer.stopAllBGM();
             }
             
-            Bukkit.broadcastMessage("§6§l暴君残魂已被彻底消灭! §e荣耀归于勇者们!");
-            Bukkit.broadcastMessage("§6§l暴君宝藏袋已掉落! §e快去收集战利品吧!");
+            Bukkit.broadcastMessage("§6§l远古的声音：曾几何时，本可没有战争，曾几何....");
+            Bukkit.broadcastMessage("§6§l远古的声音：你和SUN都走了错误的路.......");
         }
     }
 

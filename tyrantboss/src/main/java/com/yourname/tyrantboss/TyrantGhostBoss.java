@@ -84,7 +84,7 @@ public class TyrantGhostBoss {
         ghost.getWorld().spawnParticle(Particle.FLAME, ghost.getLocation(), 20, 1, 1, 1);
         
         // 提示信息
-        target.sendMessage("§5暴君残魂向你发射了强力火球!");
+        target.sendMessage("§5远古的声音：SUN,你的灵魂已经失去....吸引力了.....");
     }
 
     private void useDragonBreathAbility(Player target) {
@@ -103,7 +103,7 @@ public class TyrantGhostBoss {
         ghost.getWorld().spawnParticle(Particle.DRAGON_BREATH, eyeLocation, 30, 1, 1, 1);
         
         // 提示信息
-        target.sendMessage("§5暴君残魂向你吐出了致命龙息!");
+        target.sendMessage("§5远古的声音：GARGANTUA,为什么要离开.....我本可以救你.....");
     }
 
     private void useBombardmentAbility() {
@@ -112,7 +112,7 @@ public class TyrantGhostBoss {
         Location ghostLocation = ghost.getLocation();
         
         // 广播消息
-        Bukkit.broadcastMessage("§5§l暴君残魂开始轰炸! 寻找掩护!");
+        Bukkit.broadcastMessage("§5§l远古的声音：你的罪孽在于你该死的天真！你以为地狱的这群生物会被LUNAR阻止吗...");
         
         // 开始轰炸
         new BukkitRunnable() {

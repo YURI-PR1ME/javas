@@ -32,15 +32,15 @@ public class PacificWindManager {
         // 设置名称和Lore
         meta.setDisplayName("§9太平洋之风 §bPacific Wind");
         meta.setLore(Arrays.asList(
-            "§8« §7来自深海的呼唤 §8»",
+            "§8« §7SUN的呼唤 §8»",
             "",
-            "§c请正常对待这把三叉戟，不要一不小心召唤远古暴君§7",
+            "§c曾几何时，本不需要战争....§7",
             "",
-            "§6⚠ 警告: 这将召唤强大的Boss!",
-            "§6请确保做好充分准备!",
+            "§6直到LUNAR嫉妒SUN的力量，那份，不属于他的../",
+            "§6SUN本可杀死LUNAR,成为双界之王..",
             "",
             "§8传说: 这把三叉戟曾属于",
-            "§8一位统治太平洋的远古君主...",
+            "§8一位统治主世界的神明...",
             "",
             "§7召唤条件:",
             "§7- 只能在地狱使用",
@@ -49,9 +49,9 @@ public class PacificWindManager {
         
         // 添加附魔效果
         meta.addEnchant(Enchantment.LOYALTY, 3, true);
-        meta.addEnchant(Enchantment.IMPALING, 5, true);
+        meta.addEnchant(Enchantment.IMPALING, 12, true);
         meta.addEnchant(Enchantment.CHANNELING, 1, true);
-        meta.addEnchant(Enchantment.RIPTIDE, 3, true);
+        //meta.addEnchant(Enchantment.RIPTIDE, 1, true);
         
         // 设置不可破坏
         meta.setUnbreakable(true);
@@ -80,7 +80,7 @@ public class PacificWindManager {
         ItemStack pacificWind = createPacificWind();
         
         if (player.getInventory().addItem(pacificWind).isEmpty()) {
-            player.sendMessage("§9🌊 你获得了 §9太平洋之风 §b三叉戟!");
+            player.sendMessage("§9🌊 你获得了 §9太平洋之风 ");
             player.sendMessage("§7右键§5地狱§7的末地传送门框架召唤§4暴君§7");
             player.sendMessage("§6注意: 整个服务器只能召唤一次暴君!");
             
