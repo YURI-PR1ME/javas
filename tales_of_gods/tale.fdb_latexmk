@@ -1,10 +1,10 @@
 # Fdb version 4
-["xdvipdfmx"] 1765019853.90295 "tale.xdv" "tale.pdf" "tale" 1765019854.12961 0
-  "tale.xdv" 1765019853.86837 63956 02db0911c4e0edeec6e3f6fb38d26b63 "xelatex"
+["xdvipdfmx"] 1765031809.02905 "tale.xdv" "tale.pdf" "tale" 1765031809.23593 0
+  "tale.xdv" 1765031808.97177 63956 1176a83c5f1aa750a7a5f841641a966a "xelatex"
   (generated)
   "tale.pdf"
   (rewritten before read)
-["xelatex"] 1765019853.17273 "tale.tex" "tale.xdv" "tale" 1765019854.12888 0
+["xelatex"] 1765031808.06078 "tale.tex" "tale.xdv" "tale" 1765031809.23479 0
   "/usr/share/texmf-dist/fonts/tfm/public/cm/cmr10.tfm" 1755987285 1296 45809c5a464d5f32c8f98ba97c1bb47f ""
   "/usr/share/texmf-dist/tex/latex/algorithms/algorithm.sty" 1755987285 3249 15763257e50278eef5db1952ccde229c ""
   "/usr/share/texmf-dist/tex/latex/algorithms/algorithmic.sty" 1755987285 9318 793e9d5a71e74e730d97f6bf5d7e2bca ""
@@ -44,9 +44,9 @@
   "/usr/share/texmf-dist/tex/xelatex/xecjk/xeCJK.sty" 1755987285 183137 ed372550124703b2b73cbcc0b47cb20f ""
   "/usr/share/texmf-dist/tex/xelatex/xecjk/xeCJKfntef.sty" 1755987285 39577 b470f8a1dbecc9c45c9bf05ca7db9188 ""
   "/usr/share/texmf-dist/web2c/texmf.cnf" 1755987285 42087 b0f9697c952c8f5a8eede4134282cb0d ""
-  "/var/lib/texmf/web2c/xetex/xelatex.fmt" 1763708068 6061060 e37abb9192aba489fcb519513ed3f827 ""
-  "tale.aux" 1765019853.86782 695 47bc22f050d4ab8ddbd8c25d424b9f96 "xelatex"
-  "tale.tex" 1765019851.95545 11809 12c1003785e97cc57415c2b293b8bc02 ""
+  "/var/lib/texmf/web2c/xetex/xelatex.fmt" 1764003992 6061065 b0f2e18e9bb963e426f039c3f1863e18 ""
+  "tale.aux" 1765031808.97177 695 47bc22f050d4ab8ddbd8c25d424b9f96 "xelatex"
+  "tale.tex" 1765031789.4997 11809 12c1003785e97cc57415c2b293b8bc02 ""
   (generated)
   "tale.aux"
   "tale.log"
