@@ -1,12 +1,10 @@
 # Fdb version 4
-["xdvipdfmx"] 1765172930.44851 "tale.xdv" "tale.pdf" "tale" 1765172930.74629 0
-  "tale.xdv" 1765172930.3774 63956 eaeb6791f69e1c2ef002c619607b518e "xelatex"
+["xdvipdfmx"] 1765184510.3221 "tale.xdv" "tale.pdf" "tale" 1765184510.65279 0
+  "tale.xdv" 1765184510.2872 61736 cdc5b09e43c418da7ad4ab8b0de4f930 "xelatex"
   (generated)
   "tale.pdf"
   (rewritten before read)
-["xelatex"] 1765172929.4183 "tale.tex" "tale.xdv" "tale" 1765172930.74503 0
-  "/home/yuri/.texlive/texmf-var/web2c/xetex/xelatex.fmt" 1761490624 4491643 88fc39550c2a74f96426645da668d8fb ""
-  "/home/yuri/texmf/tex/latex/ieeetran/IEEEtran.cls" 1763569209.40495 281957 5b2e4fa15b0f7eabb840ebf67df4c0f7 ""
+["xelatex"] 1765184509.57662 "tale.tex" "tale.xdv" "tale" 1765184510.65206 0
   "/usr/share/texmf-dist/fonts/tfm/public/cm/cmr10.tfm" 1755987285 1296 45809c5a464d5f32c8f98ba97c1bb47f ""
   "/usr/share/texmf-dist/tex/latex/algorithms/algorithm.sty" 1755987285 3249 15763257e50278eef5db1952ccde229c ""
   "/usr/share/texmf-dist/tex/latex/algorithms/algorithmic.sty" 1755987285 9318 793e9d5a71e74e730d97f6bf5d7e2bca ""
@@ -36,6 +34,7 @@
   "/usr/share/texmf-dist/tex/latex/graphics/keyval.sty" 1755987285 2671 70891d50dac933918b827d326687c6e8 ""
   "/usr/share/texmf-dist/tex/latex/graphics/mathcolor.ltx" 1755987285 2885 9c645d672ae17285bba324998918efd8 ""
   "/usr/share/texmf-dist/tex/latex/graphics/trig.sty" 1755987285 4023 2c9f39712cf7b43d3eb93a8bbd5c8f67 ""
+  "/usr/share/texmf-dist/tex/latex/ieeetran/IEEEtran.cls" 1755987285 281957 5b2e4fa15b0f7eabb840ebf67df4c0f7 ""
   "/usr/share/texmf-dist/tex/latex/l3backend/l3backend-xetex.def" 1755987285 31593 96a7f07a08af85a2bbfee2e0a9cdbb50 ""
   "/usr/share/texmf-dist/tex/latex/l3kernel/expl3.sty" 1755987285 6565 f51d809db6193fae7b06c1bc26ca8f75 ""
   "/usr/share/texmf-dist/tex/latex/l3packages/xparse/xparse.sty" 1755987285 9783 ab4bee47700c04aadedb8da27591b0ab ""
@@ -45,8 +44,9 @@
   "/usr/share/texmf-dist/tex/xelatex/xecjk/xeCJK.sty" 1755987285 183137 ed372550124703b2b73cbcc0b47cb20f ""
   "/usr/share/texmf-dist/tex/xelatex/xecjk/xeCJKfntef.sty" 1755987285 39577 b470f8a1dbecc9c45c9bf05ca7db9188 ""
   "/usr/share/texmf-dist/web2c/texmf.cnf" 1755987285 42087 b0f9697c952c8f5a8eede4134282cb0d ""
-  "tale.aux" 1765172930.37599 695 47bc22f050d4ab8ddbd8c25d424b9f96 "xelatex"
-  "tale.tex" 1765172907.25177 11809 12c1003785e97cc57415c2b293b8bc02 ""
+  "/var/lib/texmf/web2c/xetex/xelatex.fmt" 1763708068 6061060 e37abb9192aba489fcb519513ed3f827 ""
+  "tale.aux" 1765184510.28566 706 696bd2dd3488e111e2b465fdd6d95b1a "xelatex"
+  "tale.tex" 1765184508.5131 12039 f086cc79a5adb0c74e37c21887e4b3be ""
   (generated)
   "tale.aux"
   "tale.log"
