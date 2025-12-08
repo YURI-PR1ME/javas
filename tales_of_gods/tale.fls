@@ -1,10 +1,10 @@
-PWD /home/yuri/javascripts/tales_of_gods
+PWD /home/yuri/javaproject/tales_of_gods
 INPUT /usr/share/texmf-dist/web2c/texmf.cnf
-INPUT /var/lib/texmf/web2c/xetex/xelatex.fmt
+INPUT /home/yuri/.texlive/texmf-var/web2c/xetex/xelatex.fmt
 INPUT tale.tex
 OUTPUT tale.log
-INPUT /usr/share/texmf-dist/tex/latex/ieeetran/IEEEtran.cls
-INPUT /usr/share/texmf-dist/tex/latex/ieeetran/IEEEtran.cls
+INPUT /home/yuri/texmf/tex/latex/ieeetran/IEEEtran.cls
+INPUT /home/yuri/texmf/tex/latex/ieeetran/IEEEtran.cls
 INPUT /usr/share/texmf-dist/tex/latex/cite/cite.sty
 INPUT /usr/share/texmf-dist/tex/latex/cite/cite.sty
 INPUT /usr/share/texmf-dist/tex/latex/amsmath/amsmath.sty
