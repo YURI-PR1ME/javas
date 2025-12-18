@@ -3,10 +3,16 @@ package com.yourname.pacificwind;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Trident;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -21,27 +27,65 @@ public class PacificWindListener implements Listener {
     private final PacificWindManager windManager;
     private final Set<UUID> activeSummons;
     
+    // 存储投掷的三叉戟是否来自太平洋之风
+    private final Set<UUID> pacificWindTridents;
+    
     public PacificWindListener(PacificWindPlugin plugin) {
         this.plugin = plugin;
         this.windManager = plugin.getWindManager();
         this.activeSummons = new HashSet<>();
+        this.pacificWindTridents = new HashSet<>();
     }
     
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
-        Block block = event.getClickedBlock();
+        Action action = event.getAction();
         
         // 检查是否手持太平洋之风三叉戟
         if (item == null || !windManager.isPacificWind(item)) {
             return;
         }
         
-        // 检查是否右键末地传送门框架
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && 
-            block != null && 
-            block.getType() == Material.END_PORTAL_FRAME) {
+        // 潜行+左键：切换模式
+        if (player.isSneaking() && (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK)) {
+            event.setCancelled(true);
+            windManager.toggleWindMode(player, item);
+            return;
+        }
+        
+        // 潜行+右键：开始蓄力（空中或方块）
+        if (player.isSneaking() && (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK)) {
+            event.setCancelled(true);
+            
+            // 检查是否已在蓄力
+            if (windManager.isCharging(player.getUniqueId())) {
+                return;
+            }
+            
+            // 检查冷却
+            if (windManager.isRainOnCooldown(player.getUniqueId())) {
+                long remaining = windManager.getRainCooldownRemaining(player.getUniqueId());
+                player.sendMessage("§c❌ 下雨技能冷却中! 剩余: " + remaining + "秒");
+                player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 1.0f);
+                return;
+            }
+            
+            // 开始蓄力
+            windManager.startCharging(player.getUniqueId());
+            player.sendMessage("§9🌀 开始蓄力... 保持潜行3秒召唤降雨");
+            player.playSound(player.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1.0f, 2.0f);
+            
+            // 启动蓄力检测任务
+            new ChargingTask(plugin, player.getUniqueId()).runTaskTimer(plugin, 0L, 1L);
+            return;
+        }
+        
+        // 非潜行右键末地传送门框架：召唤暴君
+        Block block = event.getClickedBlock();
+        if (!player.isSneaking() && action == Action.RIGHT_CLICK_BLOCK && 
+            block != null && block.getType() == Material.END_PORTAL_FRAME) {
             
             event.setCancelled(true);
             
@@ -67,6 +111,108 @@ public class PacificWindListener implements Listener {
             
             // 开始召唤仪式
             startSummonRitual(player, block.getLocation());
+        }
+    }
+    
+    @EventHandler
+    public void onProjectileLaunch(ProjectileLaunchEvent event) {
+        // 检查是否是三叉戟
+        if (!(event.getEntity() instanceof Trident)) {
+            return;
+        }
+        
+        Trident trident = (Trident) event.getEntity();
+        
+        // 检查投掷者是否是玩家
+        if (!(trident.getShooter() instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) trident.getShooter();
+        
+        // 检查玩家是否手持太平洋之风三叉戟
+        ItemStack handItem = player.getInventory().getItemInMainHand();
+        if (!windManager.isPacificWind(handItem)) {
+            return;
+        }
+        
+        // 标记这个三叉戟实体来自太平洋之风
+        pacificWindTridents.add(trident.getUniqueId());
+    }
+    
+    @EventHandler
+    public void onProjectileHit(ProjectileHitEvent event) {
+        // 检查是否是三叉戟
+        if (!(event.getEntity() instanceof Trident)) {
+            return;
+        }
+        
+        Trident trident = (Trident) event.getEntity();
+        
+        // 检查是否来自太平洋之风
+        if (!pacificWindTridents.contains(trident.getUniqueId())) {
+            return;
+        }
+        
+        // 移除标记
+        pacificWindTridents.remove(trident.getUniqueId());
+        
+        // 检查被击中的实体
+        Entity hitEntity = event.getHitEntity();
+        if (hitEntity == null || hitEntity.equals(trident.getShooter())) {
+            return;
+        }
+        
+        Location hitLocation = trident.getLocation();
+        
+        // 检查世界是否在下雨
+        if (trident.getWorld().hasStorm()) {
+            // 触发引雷+爆炸效果
+            triggerLightningExplosion(trident, hitLocation, hitEntity);
+        }
+    }
+    
+    private void triggerLightningExplosion(Trident trident, Location location, Entity hitEntity) {
+        World world = location.getWorld();
+        
+        // 1. 召唤闪电
+        world.strikeLightningEffect(location);
+        
+        // 2. 创建小爆炸（降低威力到0.5，不破坏方块）
+        world.createExplosion(location, 0.5f, false, false);
+        
+        // 3. 播放音效
+        world.playSound(location, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
+        world.playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 0.5f, 1.5f);
+        
+        // 4. 粒子效果
+        for (int i = 0; i < 15; i++) {
+            double offsetX = (Math.random() - 0.5) * 2;
+            double offsetY = (Math.random() - 0.5) * 2;
+            double offsetZ = (Math.random() - 0.5) * 2;
+            
+            world.spawnParticle(Particle.EXPLOSION, 
+                location.clone().add(offsetX, offsetY, offsetZ), 
+                3, 0.1, 0.1, 0.1, 0.05);
+        }
+        
+        // 5. 对命中实体造成额外伤害
+        if (hitEntity instanceof LivingEntity) {
+            LivingEntity livingEntity = (LivingEntity) hitEntity;
+            
+            // 降低额外伤害：3点伤害（1.5颗心）
+            double currentHealth = livingEntity.getHealth();
+            double newHealth = Math.max(0, currentHealth - 3.0);
+            livingEntity.setHealth(newHealth);
+            
+            // 播放受伤音效
+            world.playSound(location, Sound.ENTITY_GENERIC_HURT, 1.0f, 1.0f);
+        }
+        
+        // 6. 给投掷者反馈（如果是在线玩家）
+        if (trident.getShooter() instanceof Player) {
+            Player player = (Player) trident.getShooter();
+            player.sendActionBar("§e⚡ 引雷爆炸!");
         }
     }
     
@@ -174,39 +320,40 @@ public class PacificWindListener implements Listener {
         }
     }
     
-   private boolean tryReflectiveSpawn(Location location) {
-    try {
-        // 获取暴君插件 - 尝试多个可能的名称
-        org.bukkit.plugin.Plugin tyrantPlugin = Bukkit.getPluginManager().getPlugin("TyrantBoss");
-        
-        // 如果没找到，尝试其他可能的名称
-        if (tyrantPlugin == null) {
-            tyrantPlugin = Bukkit.getPluginManager().getPlugin("TyrantBossPlugin");
-        }
-        if (tyrantPlugin == null) {
-            tyrantPlugin = Bukkit.getPluginManager().getPlugin("tyrantboss");
-        }
-        
-        if (tyrantPlugin == null) {
-            plugin.getLogger().warning("暴君插件未找到，尝试的插件名: TyrantBoss, TyrantBossPlugin, tyrantboss");
+    private boolean tryReflectiveSpawn(Location location) {
+        try {
+            // 获取暴君插件 - 尝试多个可能的名称
+            org.bukkit.plugin.Plugin tyrantPlugin = Bukkit.getPluginManager().getPlugin("TyrantBoss");
+            
+            // 如果没找到，尝试其他可能的名称
+            if (tyrantPlugin == null) {
+                tyrantPlugin = Bukkit.getPluginManager().getPlugin("TyrantBossPlugin");
+            }
+            if (tyrantPlugin == null) {
+                tyrantPlugin = Bukkit.getPluginManager().getPlugin("tyrantboss");
+            }
+            
+            if (tyrantPlugin == null) {
+                plugin.getLogger().warning("暴君插件未找到，尝试的插件名: TyrantBoss, TyrantBossPlugin, tyrantboss");
+                return false;
+            }
+            
+            plugin.getLogger().info("找到暴君插件: " + tyrantPlugin.getName() + " v" + tyrantPlugin.getDescription().getVersion());
+            
+            // 使用反射调用 spawnTyrantBoss 方法
+            java.lang.reflect.Method spawnMethod = tyrantPlugin.getClass().getMethod("spawnTyrantBoss", Location.class);
+            spawnMethod.invoke(tyrantPlugin, location);
+            
+            plugin.getLogger().info("通过反射成功召唤暴君");
+            return true;
+            
+        } catch (Exception e) {
+            plugin.getLogger().warning("反射调用失败: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
-        
-        plugin.getLogger().info("找到暴君插件: " + tyrantPlugin.getName() + " v" + tyrantPlugin.getDescription().getVersion());
-        
-        // 使用反射调用 spawnTyrantBoss 方法
-        java.lang.reflect.Method spawnMethod = tyrantPlugin.getClass().getMethod("spawnTyrantBoss", Location.class);
-        spawnMethod.invoke(tyrantPlugin, location);
-        
-        plugin.getLogger().info("通过反射成功召唤暴君");
-        return true;
-        
-    } catch (Exception e) {
-        plugin.getLogger().warning("反射调用失败: " + e.getMessage());
-        e.printStackTrace();
-        return false;
     }
-} 
+    
     private boolean tryCommandSpawn(Player player, Location location) {
         try {
             // 通过控制台执行命令，这样就不需要处理玩家权限

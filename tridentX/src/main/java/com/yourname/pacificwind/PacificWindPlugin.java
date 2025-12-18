@@ -45,6 +45,7 @@ public class PacificWindPlugin extends JavaPlugin {
         
         getLogger().info("§9太平洋之风插件已启用!");
         getLogger().info("暴君召唤状态: " + (isTyrantSummoned() ? "§c已召唤" : "§a未召唤"));
+        getLogger().info("新功能: 蓄力下雨(CD5分钟) + 模式切换(引雷/激流) + 下雨时投掷引雷爆炸");
     }
     
     @Override

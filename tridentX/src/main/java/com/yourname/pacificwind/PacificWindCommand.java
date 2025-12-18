@@ -38,6 +38,9 @@ public class PacificWindCommand implements CommandExecutor, TabCompleter {
             case "status":
                 handleStatus(sender);
                 break;
+            case "cooldown":
+                handleCooldown(sender, args);
+                break;
             case "help":
             default:
                 sendHelp(sender);
@@ -51,10 +54,12 @@ public class PacificWindCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§6/pacificwind give §7- 给自己太平洋之风三叉戟");
         sender.sendMessage("§6/pacificwind give <玩家> §7- 给指定玩家太平洋之风三叉戟");
         sender.sendMessage("§6/pacificwind status §7- 查看暴君召唤状态");
+        sender.sendMessage("§6/pacificwind cooldown [玩家] §7- 查看下雨冷却时间");
         
         if (sender.hasPermission("pacificwind.admin")) {
             sender.sendMessage("§8[管理员命令]");
             sender.sendMessage("§6/pacificwind reset §7- 重置暴君召唤限制");
+            sender.sendMessage("§6/pacificwind cooldown clear [玩家] §7- 清除下雨冷却");
             sender.sendMessage("§6/pacificwind help §7- 显示此帮助");
         }
     }
@@ -107,6 +112,60 @@ public class PacificWindCommand implements CommandExecutor, TabCompleter {
         } else {
             sender.sendMessage("§a✅ 暴君尚未被召唤，可以召唤");
         }
+        
+        // 显示下雨冷却信息（如果是玩家）
+        if (sender instanceof Player) {
+            Player player = (Player) sender;
+            if (windManager.isRainOnCooldown(player.getUniqueId())) {
+                long remaining = windManager.getRainCooldownRemaining(player.getUniqueId());
+                sender.sendMessage("§c⏳ 下雨冷却中: " + remaining + "秒");
+            } else {
+                sender.sendMessage("§a✅ 下雨技能可用");
+            }
+        }
+    }
+    
+    private void handleCooldown(CommandSender sender, String[] args) {
+        if (args.length > 1 && args[1].equalsIgnoreCase("clear")) {
+            // 清除冷却
+            if (!sender.hasPermission("pacificwind.admin")) {
+                sender.sendMessage("§c❌ 你没有权限清除冷却");
+                return;
+            }
+            
+            if (args.length > 2) {
+                // 清除指定玩家的冷却
+                Player target = Bukkit.getPlayer(args[2]);
+                if (target == null) {
+                    sender.sendMessage("§c❌ 玩家不存在或不在线");
+                    return;
+                }
+                
+                windManager.clearRainCooldown(target.getUniqueId());
+                sender.sendMessage("§a✅ 已清除 " + target.getName() + " 的下雨冷却");
+                target.sendMessage("§a✅ 你的下雨冷却已被管理员清除");
+            } else if (sender instanceof Player) {
+                // 清除自己的冷却
+                windManager.clearRainCooldown(((Player) sender).getUniqueId());
+                sender.sendMessage("§a✅ 已清除你的下雨冷却");
+            } else {
+                sender.sendMessage("§c❌ 控制台请指定玩家名: /pacificwind cooldown clear <玩家>");
+            }
+            return;
+        }
+        
+        // 查看冷却
+        if (sender instanceof Player) {
+            Player player = (Player) sender;
+            if (windManager.isRainOnCooldown(player.getUniqueId())) {
+                long remaining = windManager.getRainCooldownRemaining(player.getUniqueId());
+                sender.sendMessage("§c⏳ 下雨冷却剩余: " + remaining + "秒");
+            } else {
+                sender.sendMessage("§a✅ 下雨技能可用");
+            }
+        } else {
+            sender.sendMessage("§c❌ 只有玩家可以查看冷却时间");
+        }
     }
     
     @Override
@@ -117,11 +176,25 @@ public class PacificWindCommand implements CommandExecutor, TabCompleter {
             completions.add("give");
             completions.add("help");
             completions.add("status");
+            completions.add("cooldown");
             
             if (sender.hasPermission("pacificwind.admin")) {
                 completions.add("reset");
             }
-        } else if (args.length == 2 && "give".equals(args[0])) {
+        } else if (args.length == 2) {
+            if ("give".equals(args[0])) {
+                // 在线玩家列表
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    completions.add(player.getName());
+                }
+            } else if ("cooldown".equals(args[0])) {
+                completions.add("clear");
+                // 在线玩家列表
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    completions.add(player.getName());
+                }
+            }
+        } else if (args.length == 3 && "cooldown".equals(args[0]) && "clear".equals(args[1])) {
             // 在线玩家列表
             for (Player player : Bukkit.getOnlinePlayers()) {
                 completions.add(player.getName());
