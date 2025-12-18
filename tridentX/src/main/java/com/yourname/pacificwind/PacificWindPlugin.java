@@ -1,6 +1,7 @@
 // [file name]: PacificWindPlugin.java
 package com.yourname.pacificwind;
 
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -45,12 +46,16 @@ public class PacificWindPlugin extends JavaPlugin {
         
         getLogger().info("§9太平洋之风插件已启用!");
         getLogger().info("暴君召唤状态: " + (isTyrantSummoned() ? "§c已召唤" : "§a未召唤"));
-        getLogger().info("新功能: 蓄力下雨(CD5分钟) + 模式切换(引雷/激流) + 下雨时投掷引雷爆炸");
+        getLogger().info("新功能: 蓄力下雨(CD5分钟) + 模式切换(引雷/激流) + 下雨时投掷引雷爆炸 + 手持急迫X");
     }
     
     @Override
     public void onDisable() {
         saveCustomConfig();
+        
+        // 取消所有正在运行的异步任务
+        Bukkit.getScheduler().cancelTasks(this);
+        
         getLogger().info("§9太平洋之风插件已禁用!");
     }
     

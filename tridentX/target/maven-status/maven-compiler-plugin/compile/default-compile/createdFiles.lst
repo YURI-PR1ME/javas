@@ -1,7 +1,9 @@
 com/yourname/pacificwind/ChargingTask.class
+com/yourname/pacificwind/PacificWindListener$3.class
 com/yourname/pacificwind/ChargingTask$1.class
 com/yourname/pacificwind/PacificWindPlugin.class
 com/yourname/pacificwind/PacificWindListener$1.class
 com/yourname/pacificwind/PacificWindManager.class
 com/yourname/pacificwind/PacificWindListener.class
 com/yourname/pacificwind/PacificWindCommand.class
+com/yourname/pacificwind/PacificWindListener$2.class

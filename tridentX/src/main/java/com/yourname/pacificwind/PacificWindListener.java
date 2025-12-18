@@ -14,7 +14,12 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashSet;
@@ -30,11 +35,103 @@ public class PacificWindListener implements Listener {
     // 存储投掷的三叉戟是否来自太平洋之风
     private final Set<UUID> pacificWindTridents;
     
+    // 存储正在享受急迫效果的玩家
+    private final Set<UUID> hastePlayers;
+    
+    // 任务ID用于跟踪定时任务
+    private int hasteTaskId;
+    
     public PacificWindListener(PacificWindPlugin plugin) {
         this.plugin = plugin;
         this.windManager = plugin.getWindManager();
         this.activeSummons = new HashSet<>();
         this.pacificWindTridents = new HashSet<>();
+        this.hastePlayers = new HashSet<>();
+        
+        // 启动急迫效果检查任务
+        startHasteCheckTask();
+    }
+    
+    /**
+     * 启动急迫效果检查任务
+     */
+    private void startHasteCheckTask() {
+        // 每20 ticks（1秒）检查一次
+        hasteTaskId = new BukkitRunnable() {
+            @Override
+            public void run() {
+                checkAllPlayersHaste();
+            }
+        }.runTaskTimer(plugin, 0L, 20L).getTaskId();
+    }
+    
+    /**
+     * 检查所有在线玩家的急迫效果
+     */
+    private void checkAllPlayersHaste() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            checkPlayerHaste(player);
+        }
+    }
+    
+    /**
+     * 检查单个玩家的急迫效果
+     */
+    private void checkPlayerHaste(Player player) {
+        ItemStack mainHand = player.getInventory().getItemInMainHand();
+        
+        if (windManager.isPacificWind(mainHand)) {
+            // 玩家主手持太平洋之风，给予急迫X效果
+            if (!hastePlayers.contains(player.getUniqueId())) {
+                hastePlayers.add(player.getUniqueId());
+                player.sendActionBar("§a⚡ 太平洋之风给予你急迫X效果!");
+            }
+            
+            // 给予急迫10效果（等级9代表急迫X，持续时间100 ticks（5秒），强制覆盖）
+            player.addPotionEffect(new PotionEffect(
+                PotionEffectType.HASTE, 
+                100,  // 5秒持续时间，会被定期刷新
+                9,    // 等级10（0代表1级，所以9代表10级）
+                true, // 环境效果
+                true, // 显示粒子
+                true  // 显示图标
+            ), true); // 强制覆盖
+        } else {
+            // 玩家没有手持太平洋之风，移除急迫效果
+            if (hastePlayers.contains(player.getUniqueId())) {
+                hastePlayers.remove(player.getUniqueId());
+                player.removePotionEffect(PotionEffectType.HASTE);
+                player.sendActionBar("§7急迫X效果已消失");
+            }
+        }
+    }
+    
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        // 玩家加入时立即检查
+        Player player = event.getPlayer();
+        checkPlayerHaste(player);
+    }
+    
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        // 玩家退出时移除记录
+        Player player = event.getPlayer();
+        hastePlayers.remove(player.getUniqueId());
+    }
+    
+    @EventHandler
+    public void onPlayerItemHeld(PlayerItemHeldEvent event) {
+        // 玩家切换手持物品时检查
+        Player player = event.getPlayer();
+        
+        // 延迟1 tick检查，因为事件触发时物品还没切换
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                checkPlayerHaste(player);
+            }
+        }.runTaskLater(plugin, 1L);
     }
     
     @EventHandler
