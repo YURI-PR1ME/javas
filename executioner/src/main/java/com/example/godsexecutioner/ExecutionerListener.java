@@ -499,7 +499,7 @@ public class ExecutionerListener implements Listener {
                             // 通知玩家（如果是玩家）
                             if (entity instanceof Player) {
                                 Player targetPlayer = (Player) entity;
-                                targetPlayer.sendMessage(ChatColor.RED + "你的最大生命值被减少了5点！将在30秒后恢复。");
+                                targetPlayer.sendMessage(ChatColor.RED + "你的最大生命值被减少了5点！将在5秒后恢复。");
                                 
                                 // 记录玩家的死亡状态，以便重生时恢复
                                 playerDeathHealthStorage.put(targetPlayer.getUniqueId(), originalMaxHealth);
@@ -513,7 +513,7 @@ public class ExecutionerListener implements Listener {
                                 }
                             };
                             
-                            int taskId = restoreTask.runTaskLater(plugin, 20L * 30).getTaskId(); // 30秒后
+                            int taskId = restoreTask.runTaskLater(plugin, 20L * 5).getTaskId(); // 30秒后
                             restoreTasks.put(entity.getUniqueId(), taskId);
                         }
                         
