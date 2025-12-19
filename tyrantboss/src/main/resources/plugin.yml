@@ -1,49 +1,58 @@
-name: TyrantBossPlugin
-version: 1.0.0
+name: TyrantBoss
+version: 2.0.0
 main: com.yourname.tyrantboss.TyrantBossPlugin
-api-version: 1.19
+api-version: 1.17
 commands:
   spawntyrant:
-    description: 生成暴君Boss
-    usage: /spawntyrant
-    permission: tyrantboss.console  # 改为控制台专用权限
+    description: 召唤暴君Boss
+    usage: /<command>
+  spawntyrantnpc:
+    description: 生成NPC暴君
+    usage: /<command>
+  removetyrantnpc:
+    description: 移除附近的NPC暴君
+    usage: /<command>
   tyrantreload:
     description: 重新加载暴君插件配置
-    usage: /tyrantreload
-    permission: tyrantboss.reload
+    usage: /<command>
   tyrantaddtreasure:
-    description: 添加物品到宝藏袋
-    usage: /tyrantaddtreasure <奖励ID> <概率>
-    permission: tyrantboss.addtreasure
+    description: 添加宝藏袋物品
+    usage: /<command> <奖励ID> <概率>
   tyrantlisttreasure:
-    description: 列出宝藏袋中的所有物品
-    usage: /tyrantlisttreasure
-    permission: tyrantboss.listtreasure
+    description: 列出宝藏袋物品
+    usage: /<command>
   tyrantremovetreasure:
-    description: 从宝藏袋中移除物品
-    usage: /tyrantremovetreasure <奖励ID>
-    permission: tyrantboss.removetreasure
+    description: 移除宝藏袋物品
+    usage: /<command> <奖励ID>
 permissions:
   tyrantboss.*:
-    description: 暴君Boss插件的所有权限
+    description: 暴君插件所有权限
     children:
-      tyrantboss.console: true
+      tyrantboss.spawn: true
+      tyrantboss.spawnnpc: true
+      tyrantboss.removenpc: true
       tyrantboss.reload: true
       tyrantboss.addtreasure: true
       tyrantboss.listtreasure: true
       tyrantboss.removetreasure: true
-  tyrantboss.console:
-    description: 控制台生成暴君Boss的权限
-    default: false  # 玩家默认没有权限
+  tyrantboss.spawn:
+    description: 召唤暴君Boss
+    default: op
+  tyrantboss.spawnnpc:
+    description: 生成NPC暴君
+    default: op
+  tyrantboss.removenpc:
+    description: 移除NPC暴君
+    default: op
   tyrantboss.reload:
-    description: 重新加载配置的权限
+    description: 重新加载配置
     default: op
   tyrantboss.addtreasure:
-    description: 添加宝藏袋物品的权限
+    description: 添加宝藏袋物品
     default: op
   tyrantboss.listtreasure:
-    description: 查看宝藏袋物品的权限
+    description: 查看宝藏袋物品
     default: op
   tyrantboss.removetreasure:
-    description: 移除宝藏袋物品的权限
+    description: 移除宝藏袋物品
     default: op
