@@ -42,26 +42,46 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
     // === 新增：BGM播放器 ===
     private TyrantBGMPlayer bgmPlayer;
 
+ // 新增：NPC暴君相关
+    private final Map<UUID, TyrantNPC> npcTyrants = new HashMap<>();
+    private final Map<UUID, Location> npcLocations = new HashMap<>();
+    
+    // NPC对话列表
+    private final List<String> npcDialogs = Arrays.asList(
+        "§6§l暴君: §7你想挑战我吗？先去找到太平洋之风吧。",
+        "§6§l暴君: §7没有太平洋之风，你不配与我一战。",
+        "§6§l暴君: §7SUN的武器才能唤醒真正的我。",
+        "§6§l暴君: §7找到太平洋之风，然后我们再谈。",
+        "§6§l暴君: §7太平洋之风...那是唯一能让我认真的武器。",
+        "§6§l暴君: §7你太弱小了，不配成为我的对手。",
+        "§6§l暴君: §7GARGANTUA和SUN...他们才配与我一战。",
+        "§6§l暴君: §7你的存在毫无意义，除非你拥有太平洋之风。"
+    );
     @Override
-    public void onEnable() {
+ public void onEnable() {
         bossManager = new TyrantBossManager(this);
         treasureManager = new TreasureManager(this);
         
-        // === 新增：初始化BGM播放器 ===
+        // 初始化BGM播放器
         bgmPlayer = new TyrantBGMPlayer(this);
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(bossManager, this);
         
         getServer().getPluginManager().registerEvents(new TreasureBagListener(this, treasureManager), this);
-         // === 新增：注册BGM监听器 ===
         getServer().getPluginManager().registerEvents(new TyrantBGMListener(this), this);
+        
+        // 新增：注册NPC对话事件监听器
+        getServer().getPluginManager().registerEvents(new TyrantNPCListener(this), this);
+        
         loadTreasureConfig();
+        loadNPCLocations();
         
         getLogger().info("TyrantBossPlugin 已启用!");
+        getLogger().info("NPC暴君系统已加载，NPC数量: " + npcLocations.size());
     }
-
     @Override
-    public void onDisable() {
+  public void onDisable() {
+        // 清理Boss
         for (TyrantBoss boss : activeBosses.values()) {
             boss.cleanup();
         }
@@ -71,14 +91,60 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             ghostBoss.cleanup();
         }
         activeGhostBosses.clear();
-        // === 新增：清理BGM播放器 ===
+        
+        // 清理NPC
+        for (TyrantNPC npc : npcTyrants.values()) {
+            npc.cleanup();
+        }
+        npcTyrants.clear();
+        
+        // 保存NPC位置
+        saveNPCLocations();
+        
+        // 清理BGM播放器
         if (bgmPlayer != null) {
             bgmPlayer.cleanup();
         }
+        
         bossBars.clear();
         getLogger().info("TyrantBossPlugin 已禁用!");
     }
+     // 新增：加载NPC位置
+    private void loadNPCLocations() {
+        File npcFile = new File(getDataFolder(), "npcs.yml");
+        if (!npcFile.exists()) {
+            return;
+        }
+        
+        FileConfiguration npcConfig = YamlConfiguration.loadConfiguration(npcFile);
+        if (npcConfig.contains("npcs")) {
+            for (String key : npcConfig.getConfigurationSection("npcs").getKeys(false)) {
+                Location loc = npcConfig.getLocation("npcs." + key);
+                if (loc != null) {
+                    UUID npcId = UUID.fromString(key);
+                    npcLocations.put(npcId, loc);
+                    spawnTyrantNPC(loc);
+                }
+            }
+        }
+        getLogger().info("已加载 " + npcLocations.size() + " 个NPC位置");
+    }
 
+    // 新增：保存NPC位置
+    private void saveNPCLocations() {
+        File npcFile = new File(getDataFolder(), "npcs.yml");
+        FileConfiguration npcConfig = new YamlConfiguration();
+        
+        for (Map.Entry<UUID, Location> entry : npcLocations.entrySet()) {
+            npcConfig.set("npcs." + entry.getKey().toString(), entry.getValue());
+        }
+        
+        try {
+            npcConfig.save(npcFile);
+        } catch (Exception e) {
+            getLogger().severe("保存NPC位置时出错: " + e.getMessage());
+        }
+    }
     private void loadTreasureConfig() {
         treasureFile = new File(getDataFolder(), "treasure.yml");
         if (!treasureFile.exists()) {
@@ -103,7 +169,7 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (command.getName().equalsIgnoreCase("spawntyrant")) {
             if (!(sender instanceof ConsoleCommandSender) && !sender.hasPermission("tyrantboss.console")) {
                 sender.sendMessage("§c这个指令只能通过召唤物品使用!");
@@ -122,6 +188,7 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             player.sendMessage("§6暴君Boss 已生成! 准备战斗!");
             
             return true;
+            
         } else if (command.getName().equalsIgnoreCase("tyrantreload")) {
             if (!sender.hasPermission("tyrantboss.reload")) {
                 sender.sendMessage("§c你没有权限重新加载配置!");
@@ -131,6 +198,7 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             reloadTreasureConfig();
             sender.sendMessage("§a暴君插件配置已重新加载!");
             return true;
+            
         } else if (command.getName().equalsIgnoreCase("tyrantaddtreasure")) {
             if (!(sender instanceof Player)) {
                 sender.sendMessage("只有玩家可以使用此命令!");
@@ -173,6 +241,7 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             }
             
             return true;
+            
         } else if (command.getName().equalsIgnoreCase("tyrantlisttreasure")) {
             if (!sender.hasPermission("tyrantboss.listtreasure")) {
                 sender.sendMessage("§c你没有权限查看宝藏袋物品!");
@@ -181,6 +250,7 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             
             treasureManager.listTreasureItems(sender);
             return true;
+            
         } else if (command.getName().equalsIgnoreCase("tyrantremovetreasure")) {
             if (!sender.hasPermission("tyrantboss.removetreasure")) {
                 sender.sendMessage("§c你没有权限移除宝藏袋物品!");
@@ -202,9 +272,140 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             }
             
             return true;
+            
+        } else if (command.getName().equalsIgnoreCase("spawntyrantnpc")) {
+            // 新增：生成NPC暴君命令
+            if (!(sender instanceof Player)) {
+                sender.sendMessage("只有玩家可以使用此命令!");
+                return true;
+            }
+            
+            Player player = (Player) sender;
+            
+            if (!player.hasPermission("tyrantboss.spawnnpc")) {
+                player.sendMessage("§c你没有权限生成NPC暴君!");
+                return true;
+            }
+            
+            Location npcLocation = player.getLocation();
+            spawnTyrantNPC(npcLocation);
+            player.sendMessage("§6NPC暴君 已生成! 右键对话，手持太平洋之风可挑战!");
+            
+            return true;
+            
+        } else if (command.getName().equalsIgnoreCase("removetyrantnpc")) {
+            // 新增：移除NPC暴君命令
+            if (!(sender instanceof Player)) {
+                sender.sendMessage("只有玩家可以使用此命令!");
+                return true;
+            }
+            
+            Player player = (Player) sender;
+            
+            if (!player.hasPermission("tyrantboss.removenpc")) {
+                player.sendMessage("§c你没有权限移除NPC暴君!");
+                return true;
+            }
+            
+            // 查找最近的NPC
+            TyrantNPC nearestNPC = findNearestNPC(player.getLocation(), 5);
+            if (nearestNPC != null) {
+                removeTyrantNPC(nearestNPC.getNPC().getUniqueId());
+                player.sendMessage("§a已移除附近的NPC暴君!");
+            } else {
+                player.sendMessage("§c附近5格内没有找到NPC暴君!");
+            }
+            
+            return true;
         }
         
         return false;
+    }
+
+    // 新增：生成NPC暴君
+    public void spawnTyrantNPC(Location location) {
+        WitherSkeleton npc = (WitherSkeleton) location.getWorld().spawnEntity(location, EntityType.WITHER_SKELETON);
+        setupNPCAttributes(npc);
+        
+        TyrantNPC tyrantNPC = new TyrantNPC(npc, this);
+        npcTyrants.put(npc.getUniqueId(), tyrantNPC);
+        npcLocations.put(npc.getUniqueId(), location);
+        
+        saveNPCLocations();
+    }
+
+    // 新增：移除NPC暴君
+    public void removeTyrantNPC(UUID npcId) {
+        TyrantNPC npc = npcTyrants.remove(npcId);
+        if (npc != null) {
+            npc.cleanup();
+        }
+        npcLocations.remove(npcId);
+        saveNPCLocations();
+    }
+
+    // 新增：查找最近的NPC
+    private TyrantNPC findNearestNPC(Location location, double radius) {
+        TyrantNPC nearest = null;
+        double nearestDistance = Double.MAX_VALUE;
+        
+        for (TyrantNPC npc : npcTyrants.values()) {
+            double distance = npc.getNPC().getLocation().distance(location);
+            if (distance < nearestDistance && distance <= radius) {
+                nearest = npc;
+                nearestDistance = distance;
+            }
+        }
+        
+        return nearest;
+    }
+
+    // 新增：设置NPC属性
+    private void setupNPCAttributes(WitherSkeleton npc) {
+        npc.setCustomName("§6§l暴君 §c§lTyrant (NPC)");
+        npc.setCustomNameVisible(true);
+        npc.setPersistent(true);
+        npc.setRemoveWhenFarAway(false);
+        npc.setAI(false); // 禁用AI
+        npc.setInvulnerable(true); // 无敌
+        
+        // 设置属性
+        Objects.requireNonNull(npc.getAttribute(Attribute.MAX_HEALTH)).setBaseValue(150.0);
+        npc.setHealth(150.0);
+        Objects.requireNonNull(npc.getAttribute(Attribute.ATTACK_DAMAGE)).setBaseValue(0); // 无攻击力
+        Objects.requireNonNull(npc.getAttribute(Attribute.MOVEMENT_SPEED)).setBaseValue(0); // 不能移动
+        
+        // 装备
+        equipNetheriteArmor(npc);
+        
+        // 添加视觉效果
+        npc.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 0, false, false));
+        
+        // 粒子效果
+        startNPCParticles(npc);
+    }
+
+    // 新增：NPC粒子效果
+    private void startNPCParticles(WitherSkeleton npc) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!npc.isValid() || npc.isDead()) {
+                    cancel();
+                    return;
+                }
+                
+                // 缓慢旋转
+                Location loc = npc.getLocation();
+                loc.setYaw(loc.getYaw() + 1);
+                npc.teleport(loc);
+                
+                // 粒子效果
+                npc.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, 
+                    npc.getLocation().add(0, 2, 0), 
+                    2, 0.3, 0.3, 0.3, 0.01);
+            }
+        }.runTaskTimer(this, 0L, 5L);
     }
 
     public void spawnTyrantBoss(Location location) {
@@ -237,6 +438,83 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
         if (bgmPlayer != null) {
             bgmPlayer.stopAllBGM();
         }
+    }
+     // 新增：NPC对话
+    public String getRandomNPCDialog() {
+        Random random = new Random();
+        return npcDialogs.get(random.nextInt(npcDialogs.size()));
+    }
+
+    // 新增：检查物品是否是太平洋之风
+    public boolean isPacificWind(ItemStack item) {
+        if (item == null || item.getType() != org.bukkit.Material.TRIDENT || !item.hasItemMeta()) {
+            return false;
+        }
+        
+        // 检查持久化数据
+        ItemMeta meta = item.getItemMeta();
+        return meta.getPersistentDataContainer().has(
+            new org.bukkit.NamespacedKey("pacificwind", "pacific_wind"),
+            org.bukkit.persistence.PersistentDataType.BYTE
+        );
+    }
+
+    // 新增：激活战斗暴君（从NPC转换）
+    public void activateTyrantBossFromNPC(Player player, WitherSkeleton npc) {
+        UUID npcId = npc.getUniqueId();
+        TyrantNPC tyrantNPC = npcTyrants.get(npcId);
+        
+        if (tyrantNPC == null) {
+            return;
+        }
+        
+        Location location = npc.getLocation();
+        
+        // 移除NPC
+        removeTyrantNPC(npcId);
+        
+        // 播放转换特效
+        playTransformationEffect(location);
+        
+        // 生成战斗暴君
+        spawnTyrantBoss(location);
+        
+        // 发送消息
+        player.sendMessage("§4§l暴君: §c很好！你找到了太平洋之风！准备受死吧！");
+        Bukkit.broadcastMessage("§4§l⚠ 警告! §c暴君已被 " + player.getName() + " 唤醒!");
+        Bukkit.broadcastMessage("§6所有玩家请做好战斗准备!");
+    }
+
+    // 新增：转换特效
+    private void playTransformationEffect(Location location) {
+        World world = location.getWorld();
+        
+        // 闪电
+        world.strikeLightningEffect(location);
+        
+        // 粒子
+        for (int i = 0; i < 50; i++) {
+            world.spawnParticle(Particle.FLAME, 
+                location.clone().add(
+                    (Math.random() - 0.5) * 3,
+                    2 + (Math.random() - 0.5) * 2,
+                    (Math.random() - 0.5) * 3
+                ), 
+                3, 0.2, 0.2, 0.2, 0.05);
+            
+            world.spawnParticle(Particle.SOUL_FIRE_FLAME, 
+                location.clone().add(
+                    (Math.random() - 0.5) * 2,
+                    1 + (Math.random() - 0.5) * 1,
+                    (Math.random() - 0.5) * 2
+                ), 
+                2, 0.1, 0.1, 0.1, 0.02);
+        }
+        
+        // 音效
+        world.playSound(location, Sound.ENTITY_ENDER_DRAGON_GROWL, 2.0f, 0.6f);
+        world.playSound(location, Sound.ENTITY_WITHER_SPAWN, 1.5f, 0.8f);
+        world.playSound(location, Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 0.5f);
     }
     private void setupBossAttributes(WitherSkeleton boss) {
         boss.setCustomName("§6§l暴君 §c§lTyrant");
@@ -638,7 +916,9 @@ public class TyrantBossPlugin extends JavaPlugin implements Listener {
             bossBar.removePlayer(player);
         }
     }
-
+     public Map<UUID, TyrantNPC> getNPCTyrants() {
+        return npcTyrants;
+    }
     public TyrantBossManager getBossManager() {
         return bossManager;
     }
