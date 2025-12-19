@@ -29,6 +29,12 @@ public class PacificWindManager {
     // 蓄力时间存储 (玩家UUID -> 开始蓄力时间戳)
     private final Map<UUID, Long> chargingPlayers;
     
+    // 击杀计数存储 (玩家UUID -> 击杀数量)
+    private final Map<UUID, Integer> killCounts;
+    
+    // 重置冷却所需的击杀数量
+    private static final int KILLS_TO_RESET_COOLDOWN = 20;
+    
     public PacificWindManager(PacificWindPlugin plugin) {
         this.plugin = plugin;
         this.pacificWindKey = new NamespacedKey(plugin, "pacific_wind");
@@ -36,8 +42,12 @@ public class PacificWindManager {
         this.rainCooldownKey = new NamespacedKey(plugin, "rain_cd");
         this.rainCooldowns = new HashMap<>();
         this.chargingPlayers = new HashMap<>();
+        this.killCounts = new HashMap<>();
     }
     
+    public Map<UUID, Integer> getKillCounts() {
+    return killCounts;
+}
     /**
      * 创建太平洋之风三叉戟
      */
@@ -62,6 +72,8 @@ public class PacificWindManager {
             "§7- 潜行+右键蓄力3秒: 召唤下雨(1分钟)",
             "§7- 潜行+左键: 切换引雷/激流模式",
             "§7- 下雨时投掷命中: 引雷+爆炸",
+            "§7- 主手持有: 急迫X效果",
+            "§7- 击杀20个实体: 重置下雨冷却",
             "",
             "§7当前模式: §a引雷模式 ⚡",
             "",
@@ -228,6 +240,47 @@ public class PacificWindManager {
     }
     
     /**
+     * 获取玩家击杀数量
+     */
+    public int getKillCount(UUID playerId) {
+        return killCounts.getOrDefault(playerId, 0);
+    }
+    
+    /**
+     * 增加玩家击杀数量
+     */
+    public void addKill(UUID playerId) {
+        int currentKills = getKillCount(playerId);
+        int newKills = currentKills + 1;
+        killCounts.put(playerId, newKills);
+        
+        // 检查是否达到重置冷却的击杀数
+        if (newKills >= KILLS_TO_RESET_COOLDOWN) {
+            // 重置击杀计数
+            killCounts.put(playerId, 0);
+            
+            // 清除下雨冷却
+            clearRainCooldown(playerId);
+            
+            // 通知玩家
+            Player player = org.bukkit.Bukkit.getPlayer(playerId);
+            if (player != null && player.isOnline()) {
+                player.sendMessage("§9[太平洋之风] §a✅ 已击杀20个实体，下雨冷却已重置!");
+                player.sendMessage("§7现在可以再次召唤降雨了!");
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.5f);
+                player.spawnParticle(org.bukkit.Particle.TOTEM_OF_UNDYING, player.getLocation(), 30, 0.5, 1, 0.5, 0.5);
+            }
+        }
+    }
+    
+    /**
+     * 重置玩家击杀计数
+     */
+    public void resetKillCount(UUID playerId) {
+        killCounts.put(playerId, 0);
+    }
+    
+    /**
      * 给玩家太平洋之风三叉戟
      */
     public void givePacificWindToPlayer(Player player) {
@@ -239,6 +292,8 @@ public class PacificWindManager {
             player.sendMessage("§7- 潜行+右键蓄力3秒: 召唤下雨(1分钟)");
             player.sendMessage("§7- 潜行+左键: 切换引雷/激流模式");
             player.sendMessage("§7- 下雨时投掷命中: 引雷+爆炸");
+            player.sendMessage("§7- 主手持有: 急迫X效果");
+            player.sendMessage("§7- 击杀20个实体: 重置下雨冷却");
             
             // 播放获得音效
             player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RETURN, 1.0f, 0.8f);

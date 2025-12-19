@@ -11,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -38,6 +39,9 @@ public class PacificWindListener implements Listener {
     // 存储正在享受急迫效果的玩家
     private final Set<UUID> hastePlayers;
     
+    // 存储投掷三叉戟的玩家（三叉戟UUID -> 玩家UUID）
+    private final java.util.Map<UUID, UUID> tridentThrowers;
+    
     // 任务ID用于跟踪定时任务
     private int hasteTaskId;
     
@@ -47,6 +51,7 @@ public class PacificWindListener implements Listener {
         this.activeSummons = new HashSet<>();
         this.pacificWindTridents = new HashSet<>();
         this.hastePlayers = new HashSet<>();
+        this.tridentThrowers = new java.util.HashMap<>();
         
         // 启动急迫效果检查任务
         startHasteCheckTask();
@@ -118,6 +123,9 @@ public class PacificWindListener implements Listener {
         // 玩家退出时移除记录
         Player player = event.getPlayer();
         hastePlayers.remove(player.getUniqueId());
+        
+        // 清理玩家相关的三叉戟记录
+        tridentThrowers.values().removeIf(uuid -> uuid.equals(player.getUniqueId()));
     }
     
     @EventHandler
@@ -165,6 +173,7 @@ public class PacificWindListener implements Listener {
             if (windManager.isRainOnCooldown(player.getUniqueId())) {
                 long remaining = windManager.getRainCooldownRemaining(player.getUniqueId());
                 player.sendMessage("§c❌ 下雨技能冷却中! 剩余: " + remaining + "秒");
+                player.sendMessage("§6💡 当前击杀进度: " + windManager.getKillCount(player.getUniqueId()) + "/20");
                 player.playSound(player.getLocation(), Sound.BLOCK_BEACON_DEACTIVATE, 1.0f, 1.0f);
                 return;
             }
@@ -235,6 +244,9 @@ public class PacificWindListener implements Listener {
         
         // 标记这个三叉戟实体来自太平洋之风
         pacificWindTridents.add(trident.getUniqueId());
+        
+        // 记录投掷者
+        tridentThrowers.put(trident.getUniqueId(), player.getUniqueId());
     }
     
     @EventHandler
@@ -251,9 +263,6 @@ public class PacificWindListener implements Listener {
             return;
         }
         
-        // 移除标记
-        pacificWindTridents.remove(trident.getUniqueId());
-        
         // 检查被击中的实体
         Entity hitEntity = event.getHitEntity();
         if (hitEntity == null || hitEntity.equals(trident.getShooter())) {
@@ -269,6 +278,76 @@ public class PacificWindListener implements Listener {
         }
     }
     
+    @EventHandler
+    public void onEntityDeath(EntityDeathEvent event) {
+        LivingEntity entity = event.getEntity();
+        Player killer = entity.getKiller();
+        
+        if (killer == null) {
+            // 检查是否是三叉戟击杀
+            if (entity.getLastDamageCause() instanceof EntityDamageByEntityEvent) {
+                EntityDamageByEntityEvent damageEvent = (EntityDamageByEntityEvent) entity.getLastDamageCause();
+                Entity damager = damageEvent.getDamager();
+                
+                if (damager instanceof Trident) {
+                    // 三叉戟击杀
+                    Trident trident = (Trident) damager;
+                    UUID throwerId = tridentThrowers.get(trident.getUniqueId());
+                    
+                    if (throwerId != null) {
+                        Player thrower = Bukkit.getPlayer(throwerId);
+                        if (thrower != null && thrower.isOnline()) {
+                            // 检查这个三叉戟是否来自太平洋之风
+                            if (pacificWindTridents.contains(trident.getUniqueId())) {
+                                handlePacificWindKill(thrower, entity);
+                            }
+                        }
+                    }
+                }
+            }
+            return;
+        }
+        
+        // 玩家近战击杀
+        ItemStack weapon = killer.getInventory().getItemInMainHand();
+        
+        // 检查武器是否是太平洋之风三叉戟
+        if (windManager.isPacificWind(weapon)) {
+            handlePacificWindKill(killer, entity);
+        }
+    }
+    
+    private void handlePacificWindKill(Player killer, LivingEntity victim) {
+        UUID playerId = killer.getUniqueId();
+        
+        // 增加击杀计数
+        windManager.addKill(playerId);
+        
+        // 获取当前击杀数和进度
+        int currentKills = windManager.getKillCount(playerId);
+        int killsNeeded = 20 - currentKills;
+        
+        // 显示击杀进度
+        killer.sendActionBar("§9⚔ 击杀进度: §e" + currentKills + "§9/20");
+        
+        // 每击杀5个实体显示一次提示
+        if (currentKills % 5 == 0 && currentKills > 0 && currentKills < 20) {
+            killer.sendMessage("§9[太平洋之风] §7击杀进度: §e" + currentKills + "§7/20");
+            killer.sendMessage("§7再击杀 §e" + killsNeeded + " §7个实体可以重置下雨冷却");
+            
+            // 播放进度音效
+            killer.playSound(killer.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 0.5f, 1.0f + (currentKills * 0.05f));
+        }
+        
+        // 击杀时播放音效
+        killer.playSound(killer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 1.2f);
+        
+        // 粒子效果
+        victim.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, 
+            victim.getLocation().add(0, 1, 0), 
+            10, 0.5, 0.5, 0.5, 0.1);
+    }
+    
     private void triggerLightningExplosion(Trident trident, Location location, Entity hitEntity) {
         World world = location.getWorld();
         
@@ -276,7 +355,7 @@ public class PacificWindListener implements Listener {
         world.strikeLightningEffect(location);
         
         // 2. 创建小爆炸（降低威力到0.5，不破坏方块）
-        world.createExplosion(location, 0.5f, false, false);
+        world.createExplosion(location, 1.0f, false, false);
         
         // 3. 播放音效
         world.playSound(location, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 1.0f);
@@ -299,7 +378,7 @@ public class PacificWindListener implements Listener {
             
             // 降低额外伤害：3点伤害（1.5颗心）
             double currentHealth = livingEntity.getHealth();
-            double newHealth = Math.max(0, currentHealth - 3.0);
+            double newHealth = Math.max(0, currentHealth - 9.0);
             livingEntity.setHealth(newHealth);
             
             // 播放受伤音效
@@ -309,7 +388,7 @@ public class PacificWindListener implements Listener {
         // 6. 给投掷者反馈（如果是在线玩家）
         if (trident.getShooter() instanceof Player) {
             Player player = (Player) trident.getShooter();
-            player.sendActionBar("§e⚡ 引雷爆炸!");
+            //player.sendActionBar("§e⚡ 引雷爆炸!");
         }
     }
     

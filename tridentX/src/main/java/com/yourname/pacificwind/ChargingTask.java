@@ -121,7 +121,7 @@ public class ChargingTask extends BukkitRunnable {
         
         // 广播消息
         Bukkit.broadcastMessage("§9§l[天气] §b" + player.getName() + " §7使用太平洋之风召唤了降雨!");
-        Bukkit.broadcastMessage("§6💡 下雨期间，太平洋之风三叉戟投掷命中会触发引雷+爆炸!");
+        //Bukkit.broadcastMessage("§6");
         
         // 60秒后停止下雨
         new BukkitRunnable() {
