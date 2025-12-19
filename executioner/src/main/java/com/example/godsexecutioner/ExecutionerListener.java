@@ -8,16 +8,18 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -34,6 +36,11 @@ public class ExecutionerListener implements Listener {
     
     // 存储被减少生命上限的实体：实体UUID -> 原始最大生命值
     private final Map<UUID, Double> reducedHealthEntities = new HashMap<>();
+    // 存储恢复任务：实体UUID -> 任务ID
+    private final Map<UUID, Integer> restoreTasks = new HashMap<>();
+    
+    // 存储玩家死亡时的原始生命值，以便重生时恢复
+    private final Map<UUID, Double> playerDeathHealthStorage = new HashMap<>();
     
     // 冷却时间（毫秒）
     private static final long CHARGE_COOLDOWN = 3000; // 3秒
@@ -42,6 +49,41 @@ public class ExecutionerListener implements Listener {
 
     public ExecutionerListener(GodsExecutionerPlugin plugin) {
         this.plugin = plugin;
+        
+        // 启动定期清理任务
+        startCleanupTask();
+    }
+    
+    /**
+     * 启动定期清理任务
+     */
+    private void startCleanupTask() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // 清理无效的实体记录
+                Iterator<UUID> iterator = reducedHealthEntities.keySet().iterator();
+                while (iterator.hasNext()) {
+                    UUID entityId = iterator.next();
+                    Entity entity = Bukkit.getEntity(entityId);
+                    if (entity == null || entity.isDead() || !entity.isValid()) {
+                        // 取消恢复任务
+                        Integer taskId = restoreTasks.get(entityId);
+                        if (taskId != null) {
+                            Bukkit.getScheduler().cancelTask(taskId);
+                            restoreTasks.remove(entityId);
+                        }
+                        iterator.remove();
+                    }
+                }
+                
+                // 清理死亡存储
+                playerDeathHealthStorage.entrySet().removeIf(entry -> {
+                    Player player = Bukkit.getPlayer(entry.getKey());
+                    return player == null || !player.isDead();
+                });
+            }
+        }.runTaskTimer(plugin, 6000L, 6000L); // 每5分钟清理一次
     }
 
     /**
@@ -143,16 +185,16 @@ public class ExecutionerListener implements Listener {
                 double movementDistance = movement.length();
                 
                 if (movementDistance > 0) {
-                    // 检测玩家周围3格范围内的实体
-                    for (Entity entity : player.getNearbyEntities(3, 3, 3)) {
+                    // 增加检测范围到5格，并使用更精确的碰撞检测
+                    for (Entity entity : player.getNearbyEntities(5, 5, 5)) {
                         if (entity instanceof LivingEntity && 
                             !entity.equals(player) && 
                             !hitEntities.contains(entity.getUniqueId())) {
                             
                             LivingEntity target = (LivingEntity) entity;
                             
-                            // 检查实体是否在玩家的路径上
-                            if (isEntityInPath(lastLocation, currentLocation, target)) {
+                            // 使用改进的碰撞检测
+                            if (isEntityInChargePath(lastLocation, currentLocation, target)) {
                                 hitEntities.add(target.getUniqueId());
                                 
                                 // 在目标位置产生爆炸
@@ -185,12 +227,18 @@ public class ExecutionerListener implements Listener {
                                 target.addPotionEffect(new PotionEffect(
                                     PotionEffectType.SLOWNESS, 20, 2 // 1秒缓慢III
                                 ));
+                                
+                                // 额外效果：如果目标是玩家
+                                if (target instanceof Player) {
+                                    Player targetPlayer = (Player) target;
+                                    targetPlayer.sendMessage(ChatColor.RED + player.getName() + " 的冲锋击中了你!");
+                                }
                             }
                         }
                     }
                 }
                 
-                lastLocation = currentLocation;
+                lastLocation = currentLocation.clone();
                 
                 // 显示轨迹粒子
                 for (int i = 0; i < 5; i++) {
@@ -205,10 +253,14 @@ public class ExecutionerListener implements Listener {
             }
             
             /**
-             * 检查实体是否在路径上
+             * 改进的冲锋碰撞检测方法
+             * 不使用BoundingBox，使用向量计算
              */
-            private boolean isEntityInPath(Location start, Location end, Entity entity) {
-                // 计算路径的中间点
+            private boolean isEntityInChargePath(Location start, Location end, Entity entity) {
+                // 获取实体位置
+                Location entityLoc = entity.getLocation();
+                
+                // 计算路径向量
                 Vector path = end.toVector().subtract(start.toVector());
                 double pathLength = path.length();
                 
@@ -216,13 +268,19 @@ public class ExecutionerListener implements Listener {
                 
                 Vector pathDirection = path.normalize();
                 
-                // 计算实体到路径的最短距离
-                Vector entityToStart = entity.getLocation().toVector().subtract(start.toVector());
+                // 计算实体到路径起点的向量
+                Vector entityToStart = entityLoc.toVector().subtract(start.toVector());
+                
+                // 计算投影长度（实体在路径方向上的投影）
                 double projectionLength = entityToStart.dot(pathDirection);
                 
-                // 如果投影在路径范围之外
-                if (projectionLength < 0 || projectionLength > pathLength) {
-                    return false;
+                // 如果投影在路径范围之外，检查实体是否靠近起点或终点
+                if (projectionLength < 0) {
+                    // 实体在起点之前，检查是否靠近起点
+                    return entityLoc.distance(start) < 1.5;
+                } else if (projectionLength > pathLength) {
+                    // 实体在终点之后，检查是否靠近终点
+                    return entityLoc.distance(end) < 1.5;
                 }
                 
                 // 计算投影点
@@ -230,9 +288,12 @@ public class ExecutionerListener implements Listener {
                 Vector closestPoint = start.toVector().add(projection);
                 
                 // 计算实体到投影点的距离
-                double distance = closestPoint.distance(entity.getLocation().toVector());
+                Location closestPointLoc = new Location(start.getWorld(), 
+                    closestPoint.getX(), closestPoint.getY(), closestPoint.getZ());
+                double distance = entityLoc.distance(closestPointLoc);
                 
-                // 如果距离小于2格，认为在路径上
+                // 如果距离小于2.0格，认为在路径上
+                // 增加检测范围以确保不会漏掉
                 return distance < 2.0;
             }
         }.runTaskTimer(plugin, 1L, 1L);
@@ -439,31 +500,21 @@ public class ExecutionerListener implements Listener {
                             if (entity instanceof Player) {
                                 Player targetPlayer = (Player) entity;
                                 targetPlayer.sendMessage(ChatColor.RED + "你的最大生命值被减少了5点！将在30秒后恢复。");
+                                
+                                // 记录玩家的死亡状态，以便重生时恢复
+                                playerDeathHealthStorage.put(targetPlayer.getUniqueId(), originalMaxHealth);
                             }
                             
                             // 30秒后恢复最大生命值
-                            new BukkitRunnable() {
+                            BukkitRunnable restoreTask = new BukkitRunnable() {
                                 @Override
                                 public void run() {
-                                    if (entity.isValid() && !entity.isDead()) {
-                                        Double storedHealth = reducedHealthEntities.get(entity.getUniqueId());
-                                        if (storedHealth != null) {
-                                            maxHealthAttr.setBaseValue(storedHealth);
-                                            reducedHealthEntities.remove(entity.getUniqueId());
-                                            
-                                            // 通知恢复
-                                            if (entity instanceof Player) {
-                                                Player targetPlayer = (Player) entity;
-                                                targetPlayer.sendMessage(ChatColor.GREEN + "你的最大生命值已恢复！");
-                                                targetPlayer.playSound(targetPlayer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.0f);
-                                            }
-                                        }
-                                    } else {
-                                        // 实体已死亡或无效，清理数据
-                                        reducedHealthEntities.remove(entity.getUniqueId());
-                                    }
+                                    restoreMaxHealth(entity);
                                 }
-                            }.runTaskLater(plugin, 20L * 30); // 30秒后
+                            };
+                            
+                            int taskId = restoreTask.runTaskLater(plugin, 20L * 30).getTaskId(); // 30秒后
+                            restoreTasks.put(entity.getUniqueId(), taskId);
                         }
                         
                         // 播放效果
@@ -493,6 +544,43 @@ public class ExecutionerListener implements Listener {
                 gravityFields.remove(playerId);
             }
         }.runTaskLater(plugin, 60L); // 3秒后执行 (20 ticks = 1秒)
+    }
+    
+    /**
+     * 恢复实体的最大生命值
+     */
+    private void restoreMaxHealth(LivingEntity entity) {
+        if (entity == null || !entity.isValid()) {
+            return;
+        }
+        
+        UUID entityId = entity.getUniqueId();
+        
+        // 获取原始生命值
+        Double originalMaxHealth = reducedHealthEntities.get(entityId);
+        if (originalMaxHealth == null) {
+            return;
+        }
+        
+        // 恢复最大生命值
+        AttributeInstance maxHealthAttr = entity.getAttribute(Attribute.MAX_HEALTH);
+        if (maxHealthAttr != null) {
+            maxHealthAttr.setBaseValue(originalMaxHealth);
+            
+            // 通知恢复
+            if (entity instanceof Player) {
+                Player targetPlayer = (Player) entity;
+                targetPlayer.sendMessage(ChatColor.GREEN + "你的最大生命值已恢复！");
+                targetPlayer.playSound(targetPlayer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.0f);
+                
+                // 从死亡存储中移除
+                playerDeathHealthStorage.remove(entityId);
+            }
+        }
+        
+        // 清理数据
+        reducedHealthEntities.remove(entityId);
+        restoreTasks.remove(entityId);
     }
 
     /**
@@ -569,36 +657,163 @@ public class ExecutionerListener implements Listener {
     }
 
     /**
+     * 玩家死亡事件 - 处理玩家死亡时的最大生命值恢复
+     */
+    @EventHandler
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        UUID playerId = player.getUniqueId();
+        
+        // 如果玩家是被减少生命上限的，保存原始生命值以便重生时恢复
+        if (reducedHealthEntities.containsKey(playerId)) {
+            Double originalMaxHealth = reducedHealthEntities.get(playerId);
+            if (originalMaxHealth != null) {
+                // 保存到死亡存储
+                playerDeathHealthStorage.put(playerId, originalMaxHealth);
+                
+                // 立即恢复最大生命值（防止死亡时有异常）
+                AttributeInstance maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
+                if (maxHealthAttr != null) {
+                    maxHealthAttr.setBaseValue(originalMaxHealth);
+                }
+                
+                // 取消恢复任务
+                Integer taskId = restoreTasks.get(playerId);
+                if (taskId != null) {
+                    Bukkit.getScheduler().cancelTask(taskId);
+                    restoreTasks.remove(playerId);
+                }
+                
+                // 从正常存储中移除
+                reducedHealthEntities.remove(playerId);
+                
+                plugin.getLogger().info("玩家 " + player.getName() + " 死亡，已保存并恢复最大生命值: " + originalMaxHealth);
+            }
+        }
+    }
+    
+    /**
+     * 玩家重生事件 - 确保重生后最大生命值正确
+     */
+    @EventHandler
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        
+        // 延迟1 tick执行，确保玩家完全重生
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // 检查是否在死亡存储中有记录
+                if (playerDeathHealthStorage.containsKey(playerId)) {
+                    Double originalMaxHealth = playerDeathHealthStorage.get(playerId);
+                    
+                    // 恢复最大生命值
+                    AttributeInstance maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
+                    if (maxHealthAttr != null && originalMaxHealth != null) {
+                        maxHealthAttr.setBaseValue(originalMaxHealth);
+                        
+                        // 通知玩家
+                        player.sendMessage(ChatColor.GREEN + "重生后，你的最大生命值已恢复为 " + 
+                                         String.format("%.1f", originalMaxHealth) + "!");
+                        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 1.0f);
+                        
+                        plugin.getLogger().info("玩家 " + player.getName() + " 重生，已恢复最大生命值: " + originalMaxHealth);
+                    }
+                    
+                    // 从死亡存储中移除
+                    playerDeathHealthStorage.remove(playerId);
+                    
+                    // 同时从正常存储中移除（如果还有的话）
+                    reducedHealthEntities.remove(playerId);
+                    restoreTasks.remove(playerId);
+                }
+            }
+        }.runTaskLater(plugin, 1L);
+    }
+
+    /**
      * 玩家退出时清理数据
      */
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        UUID playerId = event.getPlayer().getUniqueId();
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        
+        // 清理冷却数据
         chargeCooldowns.remove(playerId);
         witherSkullCooldowns.remove(playerId);
         gravityFieldCooldowns.remove(playerId);
         gravityFields.remove(playerId);
         
-        // 如果玩家是被减少生命上限的实体，恢复其生命上限
+        // 如果玩家是被减少生命上限的，恢复其生命上限
         if (reducedHealthEntities.containsKey(playerId)) {
-            Player player = event.getPlayer();
-            AttributeInstance maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
-            if (maxHealthAttr != null) {
-                Double originalHealth = reducedHealthEntities.get(playerId);
-                if (originalHealth != null) {
-                    maxHealthAttr.setBaseValue(originalHealth);
-                }
-            }
-            reducedHealthEntities.remove(playerId);
+            restoreMaxHealth(player);
         }
+        
+        // 清理死亡存储
+        playerDeathHealthStorage.remove(playerId);
     }
     
     /**
      * 实体死亡时清理数据
      */
     @EventHandler
-    public void onEntityDeath(org.bukkit.event.entity.EntityDeathEvent event) {
-        // 如果死亡的实体是被减少生命上限的，清理数据
-        reducedHealthEntities.remove(event.getEntity().getUniqueId());
+    public void onEntityDeath(EntityDeathEvent event) {
+        UUID entityId = event.getEntity().getUniqueId();
+        
+        // 如果死亡的实体不是玩家（玩家由PlayerDeathEvent处理）
+        if (!(event.getEntity() instanceof Player)) {
+            // 如果死亡的实体是被减少生命上限的，清理数据
+            if (reducedHealthEntities.containsKey(entityId)) {
+                // 取消恢复任务
+                Integer taskId = restoreTasks.get(entityId);
+                if (taskId != null) {
+                    Bukkit.getScheduler().cancelTask(taskId);
+                    restoreTasks.remove(entityId);
+                }
+                
+                // 清理存储
+                reducedHealthEntities.remove(entityId);
+                playerDeathHealthStorage.remove(entityId);
+            }
+        }
+    }
+    
+    /**
+     * 插件禁用时恢复所有实体的生命值
+     */
+    public void restoreAllMaxHealth() {
+        // 恢复所有正常存储的实体
+        for (UUID entityId : new ArrayList<>(reducedHealthEntities.keySet())) {
+            Entity entity = Bukkit.getEntity(entityId);
+            if (entity instanceof LivingEntity) {
+                restoreMaxHealth((LivingEntity) entity);
+            }
+        }
+        
+        // 恢复所有死亡存储的玩家
+        for (UUID playerId : new ArrayList<>(playerDeathHealthStorage.keySet())) {
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null) {
+                Double originalMaxHealth = playerDeathHealthStorage.get(playerId);
+                if (originalMaxHealth != null) {
+                    AttributeInstance maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
+                    if (maxHealthAttr != null) {
+                        maxHealthAttr.setBaseValue(originalMaxHealth);
+                    }
+                }
+            }
+        }
+        
+        // 清理所有恢复任务
+        for (Integer taskId : restoreTasks.values()) {
+            Bukkit.getScheduler().cancelTask(taskId);
+        }
+        
+        // 清空所有存储
+        reducedHealthEntities.clear();
+        restoreTasks.clear();
+        playerDeathHealthStorage.clear();
     }
 }

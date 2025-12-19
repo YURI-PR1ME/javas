@@ -10,7 +10,7 @@ commands:
     description: 获取神之执行者
     usage: /getexecutioner [player]
     permission: godsexecutioner.give
-    aliases: [ge]
+    aliases: [ge, executioner]
 
 permissions:
   godsexecutioner.give:
@@ -18,4 +18,7 @@ permissions:
     default: op
   godsexecutioner.use:
     description: 允许使用神之执行者
+    default: true
+  godsexecutioner.craft:
+    description: 允许合成神之执行者
     default: true
