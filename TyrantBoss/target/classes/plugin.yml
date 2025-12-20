@@ -1,0 +1,58 @@
+name: TyrantBoss
+version: 2.0.0
+main: com.yourname.tyrantboss.TyrantBossPlugin
+api-version: 1.17
+commands:
+  spawntyrant:
+    description: 召唤暴君Boss
+    usage: /<command>
+  spawntyrantnpc:
+    description: 生成NPC暴君
+    usage: /<command>
+  removetyrantnpc:
+    description: 移除附近的NPC暴君
+    usage: /<command>
+  tyrantreload:
+    description: 重新加载暴君插件配置
+    usage: /<command>
+  tyrantaddtreasure:
+    description: 添加宝藏袋物品
+    usage: /<command> <奖励ID> <概率>
+  tyrantlisttreasure:
+    description: 列出宝藏袋物品
+    usage: /<command>
+  tyrantremovetreasure:
+    description: 移除宝藏袋物品
+    usage: /<command> <奖励ID>
+permissions:
+  tyrantboss.*:
+    description: 暴君插件所有权限
+    children:
+      tyrantboss.spawn: true
+      tyrantboss.spawnnpc: true
+      tyrantboss.removenpc: true
+      tyrantboss.reload: true
+      tyrantboss.addtreasure: true
+      tyrantboss.listtreasure: true
+      tyrantboss.removetreasure: true
+  tyrantboss.spawn:
+    description: 召唤暴君Boss
+    default: op
+  tyrantboss.spawnnpc:
+    description: 生成NPC暴君
+    default: op
+  tyrantboss.removenpc:
+    description: 移除NPC暴君
+    default: op
+  tyrantboss.reload:
+    description: 重新加载配置
+    default: op
+  tyrantboss.addtreasure:
+    description: 添加宝藏袋物品
+    default: op
+  tyrantboss.listtreasure:
+    description: 查看宝藏袋物品
+    default: op
+  tyrantboss.removetreasure:
+    description: 移除宝藏袋物品
+    default: op

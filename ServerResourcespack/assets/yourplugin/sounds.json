@@ -1,0 +1,83 @@
+  {
+	"orion_phase1": {
+		"subtitle": "orion killer",
+		"sounds": [
+			{
+				"name": "yourplugin:orion_phase1",
+				"stream": true
+			}
+		]
+	},
+	"orion_phase2": {
+		"subtitle": "orion killer",
+		"sounds": [
+			{
+				"name": "yourplugin:orion_phase2",
+				"stream": true
+			}
+		]
+	},
+	"final_phase": {
+		"subtitle": "orion killer",
+		"sounds": [
+			{
+				"name": "yourplugin:final_phase",
+				"stream": true
+			}
+		]
+	},
+	"apostle_bgm": {
+		"subtitle": "apostle",
+		"sounds": [
+			{
+				"name": "yourplugin:apostle_bgm",
+				"stream": true
+			}
+		]
+	},
+	"tyrant_phase1": {
+		"subtitle": "tyrant",
+		"sounds": [
+			{
+				"name": "yourplugin:tyrant_phase1",
+				"stream": true
+			}
+		]
+	},
+	"tyrant_phase2": {
+		"subtitle": "tyrant2",
+		"sounds": [
+			{
+				"name": "yourplugin:tyrant_phase2",
+				"stream": true
+			}
+		]
+	},
+	"lost_ghost": {
+		"subtitle": "ghast",
+		"sounds": [
+			{
+				"name": "yourplugin:lost_ghost",
+				"stream": true
+			}
+		]
+	},
+	"drowned_phase1": {
+		"subtitle": "drowned",
+		"sounds": [
+			{
+				"name": "yourplugin:drowned_phase1",
+				"stream": true
+			}
+		]
+	},
+	"drowned_frenzy": {
+		"subtitle": "festival",
+		"sounds": [
+			{
+				"name": "yourplugin:drowned_frenzy",
+				"stream": true
+			}
+		]
+	}
+}
