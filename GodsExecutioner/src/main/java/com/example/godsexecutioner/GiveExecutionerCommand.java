@@ -49,13 +49,13 @@ public class GiveExecutionerCommand implements CommandExecutor, TabCompleter {
         ItemStack executioner = ExecutionerManager.createGodsExecutioner(plugin);
         
         if (targetPlayer.getInventory().addItem(executioner).isEmpty()) {
-            targetPlayer.sendMessage(ChatColor.GOLD + "§l你获得了神之执行者！");
+            targetPlayer.sendMessage(ChatColor.GOLD + "§l你获得了神明处决者！");
             targetPlayer.sendMessage(ChatColor.GRAY + "右键冲锋 | 潜行+左键发射凋零骷髅头 | 潜行+右键引力场");
             targetPlayer.playSound(targetPlayer.getLocation(), 
                 org.bukkit.Sound.ITEM_ARMOR_EQUIP_NETHERITE, 1.0f, 0.8f);
             
             if (!targetPlayer.equals(sender)) {
-                sender.sendMessage(ChatColor.GREEN + "已给予 " + targetPlayer.getName() + " 神之执行者");
+                sender.sendMessage(ChatColor.GREEN + "已给予 " + targetPlayer.getName() + " 神明处决者");
             }
         } else {
             // 背包已满

@@ -22,7 +22,7 @@ public class CraftingManager {
      * 注册合成配方
      */
     public void registerRecipe() {
-        // 创建神之执行者
+        // 创建神明处决者
         ItemStack result = ExecutionerManager.createGodsExecutioner(plugin);
         
         // 创建合成配方
@@ -40,7 +40,7 @@ public class CraftingManager {
         
         // 注册配方
         Bukkit.addRecipe(recipe);
-        plugin.getLogger().info("§6神之执行者合成配方已注册!");
+        plugin.getLogger().info("§6神明处决者合成配方已注册!");
     }
     
     /**
@@ -95,7 +95,7 @@ public class CraftingManager {
     }
     
     /**
-     * 检查是否可以合成神之执行者
+     * 检查是否可以合成神明处决者
      */
     public boolean canCraftGodsExecutioner(ItemStack tyrantPickaxe, ItemStack pacificWind, ItemStack dragonEgg) {
         return isTyrantPickaxe(tyrantPickaxe) && 

@@ -30,7 +30,7 @@ public class CraftingListener implements Listener {
         CraftingInventory inventory = event.getInventory();
         ItemStack[] matrix = inventory.getMatrix();
         
-        // 检查是否是神之执行者的合成配方
+        // 检查是否是神明处决者的合成配方
         if (matrix.length < 9) return;
         
         // 检查材料
@@ -87,7 +87,7 @@ public class CraftingListener implements Listener {
     public void onCraftItem(CraftItemEvent event) {
         ItemStack result = event.getRecipe().getResult();
         
-        // 检查是否是神之执行者
+        // 检查是否是神明处决者
         if (result == null || result.getType() != Material.NETHERITE_HOE) {
             return;
         }
@@ -123,21 +123,21 @@ public class CraftingListener implements Listener {
             return;
         }
         
-        // 成功合成，创建真正的神之执行者
+        // 成功合成，创建真正的神明处决者
         ItemStack godsExecutioner = ExecutionerManager.createGodsExecutioner(plugin);
         inventory.setResult(godsExecutioner);
         
         // 如果是玩家，发送成功消息
         if (event.getWhoClicked() instanceof Player) {
             Player player = (Player) event.getWhoClicked();
-            player.sendMessage(ChatColor.GOLD + "§l恭喜! 你合成了神之执行者!");
-            player.sendMessage(ChatColor.YELLOW + "这把武器融合了暴君之镐的威能、");
-            player.sendMessage(ChatColor.YELLOW + "太平洋之风的力量和龙蛋的神秘!");
+            player.sendMessage(ChatColor.GOLD + "§l 你合成了神明处决者!");
+            player.sendMessage(ChatColor.YELLOW + "这是一把对付亡灵的绝佳武器");
+            player.sendMessage(ChatColor.YELLOW + "可笑的是，二位神明都已经成为亡灵....");
             player.playSound(player.getLocation(), Sound.ENTITY_ENDER_DRAGON_DEATH, 0.5f, 0.8f);
             player.playSound(player.getLocation(), Sound.ITEM_TRIDENT_RETURN, 1.0f, 1.0f);
             
             // 全服公告
-            Bukkit.broadcastMessage(ChatColor.GOLD + "§l[神之执行者] " + 
+            Bukkit.broadcastMessage(ChatColor.GOLD + "§l[神明处决者] " + 
                                    ChatColor.YELLOW + player.getName() + 
                                    ChatColor.GOLD + " 成功合成了传说中的武器!");
         }

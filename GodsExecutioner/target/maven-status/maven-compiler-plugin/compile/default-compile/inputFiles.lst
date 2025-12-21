@@ -1,6 +1,6 @@
-/home/yuri/javascripts/executioner/src/main/java/com/example/godsexecutioner/ExecutionerListener.java
-/home/yuri/javascripts/executioner/src/main/java/com/example/godsexecutioner/GodsExecutionerPlugin.java
-/home/yuri/javascripts/executioner/src/main/java/com/example/godsexecutioner/CraftingManager.java
-/home/yuri/javascripts/executioner/src/main/java/com/example/godsexecutioner/GiveExecutionerCommand.java
-/home/yuri/javascripts/executioner/src/main/java/com/example/godsexecutioner/ExecutionerManager.java
-/home/yuri/javascripts/executioner/src/main/java/com/example/godsexecutioner/CraftingListener.java
+/home/yuri/javascripts/GodsExecutioner/src/main/java/com/example/godsexecutioner/GodsExecutionerPlugin.java
+/home/yuri/javascripts/GodsExecutioner/src/main/java/com/example/godsexecutioner/CraftingManager.java
+/home/yuri/javascripts/GodsExecutioner/src/main/java/com/example/godsexecutioner/ExecutionerManager.java
+/home/yuri/javascripts/GodsExecutioner/src/main/java/com/example/godsexecutioner/ExecutionerListener.java
+/home/yuri/javascripts/GodsExecutioner/src/main/java/com/example/godsexecutioner/CraftingListener.java
+/home/yuri/javascripts/GodsExecutioner/src/main/java/com/example/godsexecutioner/GiveExecutionerCommand.java

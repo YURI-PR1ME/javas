@@ -94,14 +94,14 @@ public class ExecutionerListener implements Listener {
         Player player = event.getPlayer();
         ItemStack item = player.getInventory().getItemInMainHand();
         
-        // 检查是否手持神之执行者
+        // 检查是否手持神明处决者
         if (!ExecutionerManager.isGodsExecutioner(item, plugin)) {
             return;
         }
         
         // 检查权限
         if (!player.hasPermission("godsexecutioner.use")) {
-            player.sendMessage(ChatColor.RED + "你没有权限使用神之执行者！");
+            player.sendMessage(ChatColor.RED + "你没有权限使用神明处决者！");
             return;
         }
         
@@ -330,7 +330,7 @@ public class ExecutionerListener implements Listener {
         skull.setCharged(true); // 蓝色凋零骷髅头
         skull.setVelocity(direction.multiply(1.5));
         
-        // 添加自定义标签，标记为神之执行者发射的
+        // 添加自定义标签，标记为神明处决者发射的
         skull.setMetadata("gods_executioner_skull", 
             new FixedMetadataValue(plugin, true));
         
@@ -368,7 +368,7 @@ public class ExecutionerListener implements Listener {
         
         WitherSkull skull = (WitherSkull) event.getEntity();
         
-        // 检查是否由神之执行者发射
+        // 检查是否由神明处决者发射
         if (!skull.hasMetadata("gods_executioner_skull")) {
             return;
         }
@@ -596,7 +596,7 @@ public class ExecutionerListener implements Listener {
         Player player = (Player) event.getDamager();
         ItemStack weapon = player.getInventory().getItemInMainHand();
         
-        // 检查是否使用神之执行者
+        // 检查是否使用神明处决者
         if (!ExecutionerManager.isGodsExecutioner(weapon, plugin)) {
             return;
         }

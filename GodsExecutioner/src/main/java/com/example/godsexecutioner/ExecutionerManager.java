@@ -14,7 +14,7 @@ import java.util.Arrays;
 public class ExecutionerManager {
 
     /**
-     * 创建神之执行者
+     * 创建神明处决者
      */
     public static ItemStack createGodsExecutioner(GodsExecutionerPlugin plugin) {
         ItemStack executioner = new ItemStack(Material.NETHERITE_HOE);
@@ -22,7 +22,7 @@ public class ExecutionerManager {
 
         if (meta != null) {
             // 设置物品名称和Lore
-            meta.setDisplayName(ChatColor.GOLD + "" + ChatColor.BOLD + "神之执行者" + 
+            meta.setDisplayName(ChatColor.GOLD + "" + ChatColor.BOLD + "神明处决者" + 
                                ChatColor.DARK_GRAY + " [Gods' Executioner]");
             
             meta.setLore(Arrays.asList(
@@ -69,7 +69,7 @@ public class ExecutionerManager {
     }
 
     /**
-     * 检查物品是否是神之执行者
+     * 检查物品是否是神明处决者
      */
     public static boolean isGodsExecutioner(ItemStack item, GodsExecutionerPlugin plugin) {
         if (item == null || item.getType() != Material.NETHERITE_HOE || !item.hasItemMeta()) {

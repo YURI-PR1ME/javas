@@ -29,7 +29,7 @@ public final class GodsExecutionerPlugin extends JavaPlugin {
         // 注册合成事件监听器
         getServer().getPluginManager().registerEvents(new CraftingListener(this, craftingManager), this);
 
-        getLogger().info("§6神之执行者插件已启用!");
+        getLogger().info("§6神明处决者插件已启用!");
         getLogger().info("§6合成配方: 暴君之镐 + 太平洋之风 + 龙蛋");
     }
 
@@ -45,7 +45,7 @@ public final class GodsExecutionerPlugin extends JavaPlugin {
             craftingManager.unregisterRecipe();
         }
         
-        getLogger().info("§6神之执行者插件已禁用!");
+        getLogger().info("§6神明处决者插件已禁用!");
     }
 
     public static GodsExecutionerPlugin getInstance() {
